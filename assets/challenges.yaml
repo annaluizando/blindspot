@@ -1,0 +1,568 @@
+challengeSets:
+  - category: "A01:2021 – Broken Access Control"
+    description: "Access control enforces policies such that users cannot act outside of their intended permissions. Failures typically lead to unauthorized disclosure, modification, or destruction of data."
+    challenges:
+      - id: "broken-access-control-1"
+        title: "Insecure Direct Object Reference"
+        description: "This API endpoint has a security vulnerability. What is it?"
+        type: 0 # MultipleChoice
+        difficulty: 0 # Beginner
+        category: "Broken Access Control"
+        code: |
+          func GetUserDocument(w http.ResponseWriter, r *http.Request) {
+              // Get document ID from URL
+              docID := r.URL.Query().Get("document_id")
+
+              // Fetch document from database
+              doc, err := db.FetchDocument(docID)
+              if err != nil {
+                  http.Error(w, "Document not found", http.StatusNotFound)
+                  return
+              }
+
+              // Return document as JSON
+              json.NewEncoder(w).Encode(doc)
+          }
+        options:
+          - "The endpoint doesn't validate if the user is authorized to access the document"
+          - "The endpoint doesn't sanitize the document_id parameter"
+          - "The endpoint doesn't check for CSRF tokens"
+          - "The endpoint doesn't use HTTPS"
+        correctAnswer: "The endpoint doesn't validate if the user is authorized to access the document"
+        hint: "The function retrieves and returns any document without checking if the current user has permission to access it."
+        tags:
+          - "access-control"
+          - "idor"
+          - "beginner"
+
+      - id: "broken-access-control-2"
+        title: "Missing Function Level Access Control"
+        description: "This admin panel endpoint contains a vulnerability. Can you spot it?"
+        type: 0 # MultipleChoice
+        difficulty: 1 # Intermediate
+        category: "Broken Access Control"
+        code: |
+          // Admin panel router setup
+          func SetupAdminRoutes(router *mux.Router) {
+              admin := router.PathPrefix("/admin").Subrouter()
+
+              // Admin endpoints
+              admin.HandleFunc("/users", ListAllUsers)
+              admin.HandleFunc("/system-config", UpdateSystemConfig)
+              admin.HandleFunc("/delete-user/{id}", DeleteUser)
+
+              // Admin dashboard
+              admin.HandleFunc("/dashboard", ShowAdminDashboard)
+          }
+        options:
+          - "The router doesn't implement logging for admin actions"
+          - "The router uses vulnerable route parameter formats"
+          - "The router doesn't apply authentication/authorization middleware"
+          - "The router isn't using HTTPS for admin endpoints"
+        correctAnswer: "The router doesn't apply authentication/authorization middleware"
+        hint: "How does the application verify that only administrators can access these endpoints?"
+        tags:
+          - "access-control"
+          - "authorization"
+          - "intermediate"
+
+  - category: "A02:2021 – Cryptographic Failures"
+    description: "Failures related to cryptography that often lead to sensitive data exposure or system compromise."
+    challenges:
+      - id: "crypto-1"
+        title: "Insecure Password Storage"
+        description: "What's wrong with this password handling code?"
+        type: 0 # MultipleChoice
+        difficulty: 0 # Beginner
+        category: "Cryptographic Failures"
+        code: |
+          func registerUser(username, password string) error {
+              // Hash the password with MD5
+              hasher := md5.New()
+              hasher.Write([]byte(password))
+              hashedPassword := hex.EncodeToString(hasher.Sum(nil))
+
+              // Store in database
+              _, err := db.Exec(
+                  "INSERT INTO users (username, password) VALUES (?, ?)",
+                  username, hashedPassword)
+              return err
+          }
+        options:
+          - "The function doesn't validate the password strength"
+          - "The function uses MD5, which is not secure for password hashing"
+          - "The function doesn't sanitize the username parameter"
+          - "The database query is vulnerable to injection"
+        correctAnswer: "The function uses MD5, which is not secure for password hashing"
+        hint: "Look at the algorithm used for storing passwords. Is it suitable for this purpose?"
+        tags:
+          - "crypto"
+          - "password"
+          - "hashing"
+          - "beginner"
+
+      - id: "crypto-2"
+        title: "Hardcoded Encryption Key"
+        description: "This encryption function has a serious security issue. What is it?"
+        type: 0 # MultipleChoice
+        difficulty: 1 # Intermediate
+        category: "Cryptographic Failures"
+        code: |
+          func encryptData(data []byte) ([]byte, error) {
+              // AES encryption key (16 bytes)
+              key := []byte("SuperS3cretKey!!")
+
+              // Create cipher block
+              block, err := aes.NewCipher(key)
+              if err != nil {
+                  return nil, err
+              }
+
+              // Generate random IV
+              iv := make([]byte, aes.BlockSize)
+              if _, err := io.ReadFull(rand.Reader, iv); err != nil {
+                  return nil, err
+              }
+
+              // Encrypt data
+              ciphertext := make([]byte, aes.BlockSize+len(data))
+              copy(ciphertext[:aes.BlockSize], iv)
+              stream := cipher.NewCFBEncrypter(block, iv)
+              stream.XORKeyStream(ciphertext[aes.BlockSize:], data)
+
+              return ciphertext, nil
+          }
+        options:
+          - "The function isn't using authenticated encryption"
+          - "The initialization vector (IV) is predictable"
+          - "The encryption key is hardcoded in the source code"
+          - "The AES cipher is used in an insecure mode"
+        correctAnswer: "The encryption key is hardcoded in the source code"
+        hint: "Where is the encryption key stored and how is it managed?"
+        tags:
+          - "crypto"
+          - "encryption"
+          - "key-management"
+          - "intermediate"
+
+  - category: "A03:2021 – Injection"
+    description: "Injection flaws occur when untrusted data is sent to an interpreter as part of a command or query."
+    challenges:
+      - id: "sql-injection-basic"
+        title: "Basic SQL Injection"
+        description: "This login function is vulnerable to SQL injection. Can you identify the vulnerability?"
+        type: 0 # MultipleChoice
+        difficulty: 0 # Beginner
+        category: "Injection"
+        code: |
+          function checkLogin($username, $password) {
+            $query = "SELECT * FROM users WHERE username='" . $username . "' AND password='" . $password . "'";
+            $result = mysqli_query($connection, $query);
+            if(mysqli_num_rows($result) > 0) {
+              return true; // Login successful
+            }
+            return false; // Login failed
+          }
+        options:
+          - "The function doesn't escape special characters in the input"
+          - "The database connection is not secure"
+          - "The function doesn't hash the password"
+          - "The function doesn't check for empty inputs"
+        correctAnswer: "The function doesn't escape special characters in the input"
+        hint: "Look at how the query string is constructed. What happens if the username or password contains SQL syntax?"
+        tags:
+          - "sql"
+          - "injection"
+          - "beginner"
+
+      - id: "sql-injection-2"
+        title: "SQL Injection in a Web Handler"
+        description: "This HTTP handler contains a security vulnerability. What is it?"
+        type: 0 # MultipleChoice
+        difficulty: 1 # Intermediate
+        category: "Injection"
+        code: |
+          func handleUserProfile(w http.ResponseWriter, r *http.Request) {
+              userID := r.URL.Query().Get("id")
+
+              // Get user data
+              db, _ := sql.Open("mysql", "user:password@/dbname")
+              query := fmt.Sprintf("SELECT username, email FROM users WHERE id = %s", userID)
+              rows, _ := db.Query(query)
+
+              // Display user data
+              var username, email string
+              if rows.Next() {
+                  rows.Scan(&username, &email)
+                  fmt.Fprintf(w, "User: %s, Email: %s", username, email)
+              }
+          }
+        options:
+          - "The handler doesn't check for errors from database operations"
+          - "The handler doesn't sanitize user input and is vulnerable to SQL injection"
+          - "The handler hard-codes database credentials in code"
+          - "The handler sends sensitive information without encryption"
+        correctAnswer: "The handler doesn't sanitize user input and is vulnerable to SQL injection"
+        hint: "Notice how the userID parameter is included in the SQL query."
+        tags:
+          - "sql"
+          - "injection"
+          - "web"
+          - "intermediate"
+
+      - id: "command-injection-1"
+        title: "Command Injection in Exec"
+        description: "This code is used to ping a server. What vulnerability does it have?"
+        type: 0 # MultipleChoice
+        difficulty: 0 # Beginner
+        category: "Injection"
+        code: |
+          func pingServer(serverAddress string) string {
+              cmd := exec.Command("ping", "-c", "3", serverAddress)
+              output, err := cmd.Output()
+              if err != nil {
+                  return "Error: " + err.Error()
+              }
+              return string(output)
+          }
+        options:
+          - "The function is vulnerable to command injection"
+          - "The function doesn't validate the server address format"
+          - "The ping command shouldn't be used in production code"
+          - "The output isn't properly sanitized before returning"
+        correctAnswer: "The function is vulnerable to command injection"
+        hint: "Think about what happens if serverAddress contains special shell characters."
+        tags:
+          - "command"
+          - "injection"
+          - "exec"
+          - "beginner"
+
+  - category: "A04:2021 – Insecure Design"
+    description: "Insecure design refers to flaws in application design and architecture rather than implementation bugs."
+    challenges:
+      - id: "insecure-design-1"
+        title: "Insecure Password Recovery"
+        description: "This password recovery system has a design flaw. What is it?"
+        type: 0 # MultipleChoice
+        difficulty: 1 # Intermediate
+        category: "Insecure Design"
+        code: |
+          func PasswordRecovery(w http.ResponseWriter, r *http.Request) {
+              if r.Method != "POST" {
+                  renderPasswordRecoveryForm(w)
+                  return
+              }
+
+              // Get email from form
+              email := r.FormValue("email")
+
+              // Find user
+              user, err := db.FindUserByEmail(email)
+              if err != nil {
+                  http.Error(w, "User not found", http.StatusNotFound)
+                  return
+              }
+
+              // Generate security question response
+              securityQuestion := user.SecurityQuestion
+              userAnswer := r.FormValue("answer")
+
+              // Check answer
+              if userAnswer == user.SecurityAnswer {
+                  // Reset password
+                  newPassword := generateRandomPassword()
+                  user.SetPassword(newPassword)
+                  user.Save()
+
+                  // Send email with new password
+                  sendPasswordEmail(user.Email, newPassword)
+
+                  http.Redirect(w, r, "/login", http.StatusSeeOther)
+              } else {
+                  http.Error(w, "Incorrect answer", http.StatusUnauthorized)
+              }
+          }
+        options:
+          - "The function generates weak random passwords"
+          - "The security question and answer mechanism is susceptible to guessing/research attacks"
+          - "The function doesn't use rate limiting for recovery attempts"
+          - "All of the above"
+        correctAnswer: "All of the above"
+        hint: "Consider the entire password recovery flow. What would make this more secure?"
+        tags:
+          - "design"
+          - "authentication"
+          - "password-recovery"
+          - "intermediate"
+
+  - category: "A05:2021 – Security Misconfiguration"
+    description: "Security misconfiguration is commonly a result of insecure default configurations, incomplete or ad hoc configurations, open cloud storage, or error messages containing sensitive information."
+    challenges:
+      - id: "security-misconfig-1"
+        title: "Verbose Error Messages"
+        description: "This database access code has a security issue. What is it?"
+        type: 0 # MultipleChoice
+        difficulty: 0 # Beginner
+        category: "Security Misconfiguration"
+        code: |
+          func ConnectToDatabase(w http.ResponseWriter, r *http.Request) {
+              dbUser := os.Getenv("DB_USER")
+              dbPass := os.Getenv("DB_PASS")
+              dbHost := os.Getenv("DB_HOST")
+
+              // Create connection string
+              connStr := fmt.Sprintf("postgres://%s:%s@%s/app_database",
+                  dbUser, dbPass, dbHost)
+
+              // Connect to database
+              db, err := sql.Open("postgres", connStr)
+              if err != nil {
+                  // Send detailed error to client
+                  http.Error(w, "Database connection error: "+err.Error(), http.StatusInternalServerError)
+                  return
+              }
+
+              // Continue with database operations...
+          }
+        options:
+          - "The function stores database credentials in environment variables"
+          - "The function returns detailed error messages to the client"
+          - "The function doesn't use SSL for database connection"
+          - "The function doesn't close the database connection"
+        correctAnswer: "The function returns detailed error messages to the client"
+        hint: "What information might be exposed in the error message that could help an attacker?"
+        tags:
+          - "misconfiguration"
+          - "error-handling"
+          - "information-disclosure"
+          - "beginner"
+
+  - category: "A06:2021 – Vulnerable and Outdated Components"
+    description: "Using components with known vulnerabilities can undermine application defenses and enable various attacks."
+    challenges:
+      - id: "outdated-components-1"
+        title: "Vulnerable Dependencies"
+        description: "This package.json file has a security issue. What is it?"
+        type: 0 # MultipleChoice
+        difficulty: 0 # Beginner
+        category: "Vulnerable and Outdated Components"
+        code: |
+          {
+            "name": "my-web-app",
+            "version": "1.0.0",
+            "dependencies": {
+              "express": "4.14.0",
+              "body-parser": "1.15.2",
+              "jquery": "1.12.4",
+              "log4js": "0.6.38",
+              "mongoose": "4.7.6"
+            },
+            "scripts": {
+              "start": "node app.js"
+            }
+          }
+        options:
+          - "The file is using outdated dependencies with known vulnerabilities"
+          - "The file is missing important security packages"
+          - "The file uses an insecure package manager"
+          - "The file doesn't specify exact versions"
+        correctAnswer: "The file is using outdated dependencies with known vulnerabilities"
+        hint: "Check the version numbers. Many of these packages have had serious vulnerabilities discovered after these versions were released."
+        tags:
+          - "dependencies"
+          - "outdated"
+          - "npm"
+          - "beginner"
+
+  - category: "A07:2021 – Identification and Authentication Failures"
+    description: "Authentication failures related to user identity, authentication, and session management."
+    challenges:
+      - id: "auth-1"
+        title: "Insecure Session Management"
+        description: "What security vulnerability exists in this session creation code?"
+        type: 0 # MultipleChoice
+        difficulty: 1 # Intermediate
+        category: "Identification and Authentication Failures"
+        code: |
+          func createSession(userID int) string {
+              // Generate session token
+              timestamp := time.Now().Unix()
+              token := fmt.Sprintf("%d:%d", userID, timestamp)
+
+              // Store in sessions map
+              sessions[token] = userID
+
+              return token
+          }
+        options:
+          - "The session token is predictable and can be guessed"
+          - "The session doesn't have an expiration time"
+          - "The sessions map could have memory leaks"
+          - "The function doesn't check if the user exists"
+        correctAnswer: "The session token is predictable and can be guessed"
+        hint: "How is the session token generated? Is there any randomness?"
+        tags:
+          - "authentication"
+          - "session"
+          - "intermediate"
+
+      - id: "auth-2"
+        title: "Weak Password Policy"
+        description: "This password validation function has a security issue. What is it?"
+        type: 0 # MultipleChoice
+        difficulty: 0 # Beginner
+        category: "Identification and Authentication Failures"
+        code: |
+          function validatePassword(password) {
+              // Check password length
+              if (password.length < 6) {
+                  return false;
+              }
+
+              return true;
+          }
+        options:
+          - "The password policy only checks for length, not complexity"
+          - "The minimum password length is too short"
+          - "The function doesn't prevent common passwords"
+          - "All of the above"
+        correctAnswer: "All of the above"
+        hint: "What makes a strong password policy?"
+        tags:
+          - "authentication"
+          - "password"
+          - "validation"
+          - "beginner"
+
+  - category: "A08:2021 – Software and Data Integrity Failures"
+    description: "Software and data integrity failures relate to code and infrastructure that does not protect against integrity violations."
+    challenges:
+      - id: "integrity-1"
+        title: "Insecure Deserialization"
+        description: "This code deserializes user data from a cookie. What vulnerability exists?"
+        type: 0 # MultipleChoice
+        difficulty: 1 # Intermediate
+        category: "Software and Data Integrity Failures"
+        code: |
+          func loadUserPreferences(r *http.Request) map[string]interface{} {
+              // Get preferences cookie
+              cookie, err := r.Cookie("user_prefs")
+              if err != nil {
+                  return map[string]interface{}{}
+              }
+
+              // Decode base64
+              decoded, err := base64.StdEncoding.DecodeString(cookie.Value)
+              if err != nil {
+                  return map[string]interface{}{}
+              }
+
+              // Deserialize
+              var prefs map[string]interface{}
+              if err := json.Unmarshal(decoded, &prefs); err != nil {
+                  return map[string]interface{}{}
+              }
+
+              return prefs
+          }
+        options:
+          - "The function doesn't validate the cookie before decoding"
+          - "The function uses base64 which isn't encryption"
+          - "The function accepts any JSON without verification"
+          - "The function doesn't handle errors properly"
+        correctAnswer: "The function accepts any JSON without verification"
+        hint: "What prevents an attacker from modifying the cookie to inject unexpected values?"
+        tags:
+          - "deserialization"
+          - "integrity"
+          - "cookies"
+          - "intermediate"
+
+  - category: "A09:2021 – Security Logging and Monitoring Failures"
+    description: "This category helps detect, escalate, and respond to active breaches. Without logging and monitoring, breaches cannot be detected."
+    challenges:
+      - id: "logging-1"
+        title: "Insufficient Logging"
+        description: "This login handler has a security monitoring issue. What is it?"
+        type: 0 # MultipleChoice
+        difficulty: 0 # Beginner
+        category: "Security Logging and Monitoring Failures"
+        code: |
+          func handleLogin(w http.ResponseWriter, r *http.Request) {
+              username := r.FormValue("username")
+              password := r.FormValue("password")
+
+              user, err := db.GetUserByUsername(username)
+              if err != nil {
+                  http.Error(w, "Login failed", http.StatusUnauthorized)
+                  return
+              }
+
+              if !user.CheckPassword(password) {
+                  http.Error(w, "Login failed", http.StatusUnauthorized)
+                  return
+              }
+
+              // Create session and redirect to dashboard
+              session := createSession(user.ID)
+              setCookie(w, "session", session)
+              http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
+          }
+        options:
+          - "The function doesn't log failed login attempts"
+          - "The function doesn't implement rate limiting"
+          - "The function doesn't use CSRF protection"
+          - "The function doesn't sanitize inputs"
+        correctAnswer: "The function doesn't log failed login attempts"
+        hint: "How would you detect brute force attacks or compromised accounts?"
+        tags:
+          - "logging"
+          - "monitoring"
+          - "authentication"
+          - "beginner"
+
+  - category: "A10:2021 – Server-Side Request Forgery"
+    description: "SSRF flaws occur when a web application fetches a remote resource without validating the user-supplied URL."
+    challenges:
+      - id: "ssrf-1"
+        title: "Basic SSRF Vulnerability"
+        description: "This function fetches a user-specified URL. What security issue does it have?"
+        type: 0 # MultipleChoice
+        difficulty: 1 # Intermediate
+        category: "Server-Side Request Forgery"
+        code: |
+          func fetchExternalResource(w http.ResponseWriter, r *http.Request) {
+              // Get URL from request
+              resourceURL := r.URL.Query().Get("url")
+
+              // Fetch resource
+              resp, err := http.Get(resourceURL)
+              if err != nil {
+                  http.Error(w, "Failed to fetch resource", http.StatusInternalServerError)
+                  return
+              }
+              defer resp.Body.Close()
+
+              // Read response
+              body, err := ioutil.ReadAll(resp.Body)
+              if err != nil {
+                  http.Error(w, "Failed to read resource", http.StatusInternalServerError)
+                  return
+              }
+
+              // Return content
+              w.Write(body)
+          }
+        options:
+          - "The function doesn't validate or sanitize the URL parameter"
+          - "The function doesn't implement proper error handling"
+          - "The function doesn't set a timeout for the HTTP request"
+          - "The function doesn't check the response content type"
+        correctAnswer: "The function doesn't validate or sanitize the URL parameter"
+        hint: "What happens if the URL points to an internal network resource?"
+        tags:
+          - "ssrf"
+          - "request-forgery"
+          - "url-validation"
+          - "intermediate"

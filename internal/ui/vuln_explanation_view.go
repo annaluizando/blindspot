@@ -1,0 +1,184 @@
+package ui
+
+import (
+	"fmt"
+	"strings"
+
+	"github.com/charmbracelet/bubbles/help"
+	"github.com/charmbracelet/bubbles/key"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
+
+	"secure-code-game/internal/challenges"
+	"secure-code-game/internal/game"
+	"secure-code-game/internal/utils"
+)
+
+// These messages are used to navigate after showing the explanation
+type nextChallengeMsg struct{}
+type backToMenuMsg struct{}
+
+// ExplanationKeyMap defines keybindings for the explanation view
+type ExplanationKeyMap struct {
+	Next key.Binding
+	Back key.Binding
+	Help key.Binding
+	Quit key.Binding
+}
+
+// ShortHelp returns keybindings to be shown in the mini help view.
+func (k ExplanationKeyMap) ShortHelp() []key.Binding {
+	return []key.Binding{k.Help, k.Quit}
+}
+
+// FullHelp returns keybindings for the expanded help view.
+func (k ExplanationKeyMap) FullHelp() [][]key.Binding {
+	return [][]key.Binding{
+		{k.Next, k.Back}, // Actions
+		{k.Help, k.Quit}, // Global
+	}
+}
+
+var ExplanationKeys = ExplanationKeyMap{
+	Next: key.NewBinding(
+		key.WithKeys("enter", "space"),
+		key.WithHelp("enter/space", "next challenge"),
+	),
+	Back: key.NewBinding(
+		key.WithKeys("esc", "backspace"),
+		key.WithHelp("esc", "back to menu"),
+	),
+	Help: key.NewBinding(
+		key.WithKeys("?"),
+		key.WithHelp("?", "toggle help"),
+	),
+	Quit: key.NewBinding(
+		key.WithKeys("ctrl+c", "q"),
+		key.WithHelp("ctrl+c/q", "quit"),
+	),
+}
+
+type ExplanationView struct {
+	gameState        *game.GameState
+	challenge        challenges.Challenge
+	explanation      challenges.VulnerabilityInfo
+	explanationFound bool
+	width            int
+	height           int
+	sourceMenu       MenuType
+	help             help.Model
+	showHelp         bool
+}
+
+var (
+	explanationSubtitleStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("#87D7FF")).Bold(true)
+	explanationHighlightStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#FAFA33")).Bold(true)
+	explanationTextStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("#DDDDDD"))
+	resourceStyle             = lipgloss.NewStyle().Foreground(lipgloss.Color("#87D7FF")).Underline(true)
+	completedStyle            = lipgloss.NewStyle().Foreground(lipgloss.Color("#5FFF87")).Bold(true)
+)
+
+// NewExplanationView creates a new explanation view
+func NewExplanationView(gs *game.GameState, challenge challenges.Challenge, width, height int, sourceMenu MenuType) *ExplanationView {
+	explanation, found := gs.GetVulnerabilityExplanation(challenge)
+
+	return &ExplanationView{
+		gameState:        gs,
+		challenge:        challenge,
+		explanation:      explanation,
+		explanationFound: found,
+		width:            width,
+		height:           height,
+		sourceMenu:       sourceMenu,
+		help:             help.New(),
+		showHelp:         false,
+	}
+}
+
+func (v *ExplanationView) Init() tea.Cmd {
+	return nil
+}
+
+// Update handles messages and user input
+func (v *ExplanationView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch {
+		case key.Matches(msg, ExplanationKeys.Quit):
+			return v, tea.Quit
+
+		case key.Matches(msg, ExplanationKeys.Help):
+			v.showHelp = !v.showHelp
+			return v, nil
+
+		case key.Matches(msg, ExplanationKeys.Next):
+			// Continue to next challenge
+			return v, func() tea.Msg {
+				return nextChallengeMsg{}
+			}
+
+		case key.Matches(msg, ExplanationKeys.Back):
+			// Go back to menu
+			return v, func() tea.Msg {
+				return backToMenuMsg{}
+			}
+		}
+
+	case tea.WindowSizeMsg:
+		v.width = msg.Width
+		v.height = msg.Height
+	}
+
+	return v, nil
+}
+
+// View renders the explanation
+func (v *ExplanationView) View() string {
+	var b strings.Builder
+
+	// Title
+	b.WriteString(completedStyle.Render("🎉 Challenge Completed!") + "\n\n")
+
+	// Challenge info
+	b.WriteString(fmt.Sprintf("You've completed: %s\n\n", selectedItemStyle.Render(v.challenge.Title)))
+
+	// Vulnerability name and category
+	b.WriteString(fmt.Sprintf("Vulnerability Category: %s\n\n", explanationHighlightStyle.Render(v.challenge.Category)))
+
+	// Explanation
+	if v.explanationFound {
+		// Short description
+		b.WriteString(explanationSubtitleStyle.Render("What is this vulnerability?") + "\n")
+		wrappedDesc := utils.WrapText(v.explanation.ShortDescription, v.width)
+		b.WriteString(descriptionStyle.Render(wrappedDesc) + "\n\n")
+
+		// Full explanation
+		b.WriteString(explanationSubtitleStyle.Render("Learn More:") + "\n")
+		wrappedExplanation := utils.WrapText(v.explanation.Explanation, v.width)
+		b.WriteString(explanationTextStyle.Render(wrappedExplanation) + "\n\n")
+
+		// Resources
+		if len(v.explanation.Resources) > 0 {
+			b.WriteString(explanationSubtitleStyle.Render("Additional Resources:") + "\n")
+			for _, resource := range v.explanation.Resources {
+				b.WriteString(fmt.Sprintf("- %s: %s\n",
+					resource.Title,
+					resourceStyle.Render(resource.URL)))
+			}
+			b.WriteString("\n")
+		}
+	} else {
+		b.WriteString(errorStyle.Render("Detailed explanation for this vulnerability category is not available yet.") + "\n\n")
+	}
+
+	// Navigation help
+	if v.showHelp {
+		b.WriteString("\n" + v.help.View(ExplanationKeys))
+	} else {
+		b.WriteString("\n" + helpHintStyle.Render("Press Enter to continue to next challenge"))
+		b.WriteString("\n" + helpHintStyle.Render("Press Esc to return to menu"))
+		b.WriteString("\n" + helpHintStyle.Render("Press ? for help"))
+	}
+
+	return b.String()
+}

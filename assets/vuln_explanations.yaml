@@ -1,0 +1,322 @@
+vulnerabilities:
+  - name: "Broken Access Control"
+    short_description: "Restrictions on authenticated users are not properly enforced, allowing attackers to access unauthorized functionality or data."
+    explanation: |
+      Broken Access Control vulnerabilities occur when an application doesn't properly enforce restrictions on what authenticated users are allowed to do. This allows attackers to access unauthorized functionality or data, such as:
+
+      - Accessing other users' accounts or data
+      - Viewing sensitive files or documents
+      - Modifying data they shouldn't have access to
+      - Elevating their privileges
+
+      Common implementation issues include:
+      - Missing authorization checks
+      - Insecure Direct Object References (IDOR)
+      - Directory traversal flaws
+      - Failure to enforce resource limits
+
+      Prevention strategies:
+      - Implement proper access control on every API endpoint and function
+      - Use the principle of least privilege
+      - Deny by default, then explicitly allow access
+      - Validate that requested resources belong to the authenticated user
+      - Implement centralized, uniform authorization mechanisms
+    resources:
+      - title: "OWASP Top 10: Broken Access Control"
+        url: "https://owasp.org/Top10/A01_2021-Broken_Access_Control/"
+      - title: "OWASP ASVS: Access Control Requirements"
+        url: "https://owasp.org/www-project-application-security-verification-standard/"
+
+  - name: "Cryptographic Failures"
+    short_description: "Failures related to cryptography that often lead to sensitive data exposure or system compromise."
+    explanation: |
+      Cryptographic Failures (previously known as Sensitive Data Exposure) occur when applications fail to adequately protect sensitive information. These failures typically involve:
+
+      - Using weak or outdated cryptographic algorithms
+      - Hardcoding encryption keys in source code
+      - Not using encryption for sensitive data
+      - Improper certificate validation
+      - Using insecure protocols
+
+      The most common impacts include:
+      - Exposure of personal data (PII)
+      - Theft of credentials
+      - Payment fraud
+      - Identity theft
+      - Compliance violations
+
+      Best practices:
+      - Classify data processed, stored, or transmitted by your application
+      - Apply controls according to the classification
+      - Don't store sensitive data unnecessarily
+      - Use modern, strong algorithms and proper key management
+      - Encrypt all sensitive data at rest and in transit
+      - Use secure protocols (TLS with secure configurations)
+      - Disable caching for sensitive responses
+    resources:
+      - title: "OWASP Top 10: Cryptographic Failures"
+        url: "https://owasp.org/Top10/A02_2021-Cryptographic_Failures/"
+      - title: "NIST Cryptographic Standards and Guidelines"
+        url: "https://csrc.nist.gov/Projects/cryptographic-standards-and-guidelines"
+
+  - name: "Injection"
+    short_description: "Injection flaws occur when untrusted data is sent to an interpreter as part of a command or query."
+    explanation: |
+      Injection vulnerabilities happen when untrusted data is sent to an interpreter as part of a command or query. The attacker's hostile data can trick the interpreter into executing unintended commands or accessing data without proper authorization.
+
+      Common types of injection include:
+      - SQL Injection
+      - NoSQL Injection
+      - OS Command Injection
+      - LDAP Injection
+      - Expression Language Injection
+
+      These vulnerabilities can lead to:
+      - Data theft
+      - Data corruption
+      - Denial of service
+      - Complete host takeover
+
+      To prevent injection vulnerabilities:
+      - Use parameterized queries for SQL and NoSQL
+      - Validate and sanitize all user input
+      - Escape special characters using syntax specific to the target interpreter
+      - Use LIMIT and other controls to prevent mass disclosure of records in case of SQL injection
+      - Implement least privilege in database accounts
+      - Avoid dynamic queries with string concatenation entirely when possible
+    resources:
+      - title: "OWASP Top 10: Injection"
+        url: "https://owasp.org/Top10/A03_2021-Injection/"
+      - title: "OWASP SQL Injection Prevention Cheat Sheet"
+        url: "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html"
+      - title: "OWASP Command Injection Prevention Cheat Sheet"
+        url: "https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html"
+
+  - name: "Insecure Design"
+    short_description: "Insecure design refers to flaws in application design and architecture rather than implementation bugs."
+    explanation: |
+      Insecure Design is a broad category focused on risks related to design and architectural flaws. Unlike implementation bugs, these issues cannot be fixed by perfect implementation - the underlying design itself is flawed.
+
+      Key characteristics of insecure design:
+      - Failure to address business-level risks
+      - Missing or ineffective threat modeling
+      - Insecure security requirements
+      - Design patterns that create unnecessary risk
+
+      Consequences can include:
+      - Business logic bypasses
+      - Complex attack chains
+      - Architectural weaknesses
+      - Insecure use cases
+
+      Prevention strategies:
+      - Establish secure development lifecycle practices
+      - Utilize threat modeling for critical authentication, access control, business logic, and key flows
+      - Integrate security language and controls into user stories
+      - Write tests to verify key security controls work as designed
+      - Create secure design patterns and reusable components
+      - Use defense in depth to reduce risk across the entire application
+      - Validate that security controls are properly segregated from untrusted inputs
+    resources:
+      - title: "OWASP Top 10: Insecure Design"
+        url: "https://owasp.org/Top10/A04_2021-Insecure_Design/"
+      - title: "OWASP SAMM (Software Assurance Maturity Model)"
+        url: "https://owaspsamm.org/"
+
+  - name: "Security Misconfiguration"
+    short_description: "Security misconfiguration is commonly a result of insecure default configurations, incomplete or ad hoc configurations, open cloud storage, or error messages containing sensitive information."
+    explanation: |
+      Security Misconfiguration remains one of the most common vulnerabilities. This issue occurs when security settings are implemented improperly, incompletely, or not at all.
+
+      Common misconfigurations include:
+      - Using default configurations or default accounts
+      - Open cloud storage
+      - Error messages containing sensitive information
+      - Missing security headers
+      - Outdated software
+      - Unnecessary features enabled
+      - Overly detailed error messages
+      - Insecure configuration values
+
+      These misconfigurations can lead to:
+      - Unauthorized access to systems
+      - Exposure of sensitive data
+      - System compromise
+      - Complete application takeover
+
+      To prevent security misconfigurations:
+      - Implement a repeatable hardening process for each environment
+      - Utilize a minimal platform without unnecessary features, components, or documentation
+      - Review and update configurations across the entire application stack
+      - Implement an automated verification process to test the effectiveness of configurations
+      - Segment application environments properly
+      - Send security directives to clients through HTTP security headers
+      - Validate all settings through an automated process
+    resources:
+      - title: "OWASP Top 10: Security Misconfiguration"
+        url: "https://owasp.org/Top10/A05_2021-Security_Misconfiguration/"
+      - title: "OWASP Web Security Testing Guide"
+        url: "https://owasp.org/www-project-web-security-testing-guide/"
+
+  - name: "Vulnerable and Outdated Components"
+    short_description: "Using components with known vulnerabilities can undermine application defenses and enable various attacks."
+    explanation: |
+      Applications are vulnerable if they use components with known vulnerabilities. This issue is widespread and can affect libraries, frameworks, and other software modules that run with the same privileges as the application.
+
+      Key problems leading to vulnerable components:
+      - Not knowing all components you're using and their versions
+      - Software being unsupported or outdated
+      - Not regularly scanning for vulnerabilities
+      - Not fixing or upgrading the underlying platform, frameworks, and dependencies
+      - Not testing compatibility of updated components
+
+      Depending on the vulnerability, the impact can range from minor to catastrophic compromise.
+
+      Prevention strategies:
+      - Remove unused dependencies
+      - Continuously inventory component versions and monitor sources like CVE and NVD for vulnerabilities
+      - Only obtain components from official sources
+      - Plan for monitoring, triaging, and applying updates or configuration changes
+      - Consider using software composition analysis tools
+      - Implement a patch management process to address new vulnerabilities
+    resources:
+      - title: "OWASP Top 10: Vulnerable and Outdated Components"
+        url: "https://owasp.org/Top10/A06_2021-Vulnerable_and_Outdated_Components/"
+      - title: "OWASP Dependency-Check"
+        url: "https://owasp.org/www-project-dependency-check/"
+
+  - name: "Identification and Authentication Failures"
+    short_description: "Authentication failures related to user identity, authentication, and session management."
+    explanation: |
+      Authentication failures (previously known as Broken Authentication) occur when functions related to user identity, authentication, or session management are implemented incorrectly.
+
+      Common authentication weaknesses include:
+      - Permitting automated attacks like credential stuffing
+      - Allowing brute force attempts
+      - Using weak or well-known passwords
+      - Using ineffective credential recovery processes
+      - Storing passwords in plain text or weakly hashed formats
+      - Missing or ineffective multi-factor authentication
+      - Exposing session identifiers in URLs
+      - Not rotating session IDs after login
+      - Not properly invalidating sessions
+
+      These can lead to:
+      - Account takeover
+      - Identity theft
+      - Data breaches
+      - Session hijacking
+
+      Prevention strategies:
+      - Implement multi-factor authentication
+      - Never ship with default credentials
+      - Implement weak-password checks
+      - Align password length, complexity, and rotation policies with NIST 800-63b
+      - Limit failed login attempts
+      - Use server-side, secure session management with proper timeouts
+      - Properly generate and validate session identifiers
+    resources:
+      - title: "OWASP Top 10: Identification and Authentication Failures"
+        url: "https://owasp.org/Top10/A07_2021-Identification_and_Authentication_Failures/"
+      - title: "OWASP Authentication Cheat Sheet"
+        url: "https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html"
+
+  - name: "Software and Data Integrity Failures"
+    short_description: "Software and data integrity failures relate to code and infrastructure that does not protect against integrity violations."
+    explanation: |
+      Software and Data Integrity Failures occur when an application relies on plugins, libraries, or modules from untrusted sources, repositories, or content delivery networks (CDNs). An insecure CI/CD pipeline can introduce the potential for unauthorized access, malicious code, or system compromise.
+
+      Common integrity failure scenarios:
+      - Using plugins from untrusted sources
+      - Insecure deserialization
+      - Using unsigned auto-update functionality
+      - Not validating signed data
+      - CI/CD pipeline without proper security controls
+
+      These vulnerabilities can lead to:
+      - Unauthorized code execution
+      - Malicious code insertion
+      - Supply chain attacks
+      - Loss of data integrity
+
+      To prevent integrity failures:
+      - Use digital signatures to verify software or data is from the expected source and hasn't been altered
+      - Ensure libraries and dependencies are from trusted repositories
+      - Implement a software supply chain security tool
+      - Establish a review process for code and configuration changes
+      - Ensure your CI/CD pipeline has proper segregation, configuration, and access control
+      - Validate serialized data from untrusted sources before processing
+    resources:
+      - title: "OWASP Top 10: Software and Data Integrity Failures"
+        url: "https://owasp.org/Top10/A08_2021-Software_and_Data_Integrity_Failures/"
+      - title: "OWASP Deserialization Cheat Sheet"
+        url: "https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html"
+
+  - name: "Security Logging and Monitoring Failures"
+    short_description: "This category helps detect, escalate, and respond to active breaches. Without logging and monitoring, breaches cannot be detected."
+    explanation: |
+      Security Logging and Monitoring Failures occur when applications don't record, generate, or monitor logs effectively. Without proper logging and monitoring, breaches can go undetected for extended periods.
+
+      Key logging and monitoring issues:
+      - Not logging auditable events (logins, failed logins, high-value transactions)
+      - Not generating logs with sufficient context to identify suspicious activity
+      - Not storing logs for critical transactions
+      - Inappropriate log storage (local only)
+      - No effective monitoring or alerting
+      - No real-time response process
+
+      These failures can:
+      - Go unnoticed for months or years
+      - Allow attackers time to compromise other systems
+      - Prevent forensic investigations
+      - Make identifying attack patterns difficult
+
+      Best practices:
+      - Ensure all login, access control, and server-side input validation failures are logged
+      - Generate logs in a format that log management solutions can easily consume
+      - Include enough context to identify suspicious or malicious accounts
+      - Implement centralized log management
+      - Create an incident response and recovery plan
+      - Use intrusion detection systems and SIEMs
+      - Establish effective monitoring thresholds and escalation workflows
+    resources:
+      - title: "OWASP Top 10: Security Logging and Monitoring Failures"
+        url: "https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/"
+      - title: "OWASP Logging Cheat Sheet"
+        url: "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html"
+
+  - name: "Server-Side Request Forgery"
+    short_description: "SSRF flaws occur when a web application fetches a remote resource without validating the user-supplied URL."
+    explanation: |
+      Server-Side Request Forgery (SSRF) vulnerabilities let attackers force the server to make HTTP requests to an arbitrary domain chosen by the attacker. In modern applications with complex architectures, this can be particularly dangerous.
+
+      SSRF allows attackers to:
+      - Scan internal networks behind firewalls
+      - Access metadata services in cloud environments
+      - Access internal services with no authentication
+      - Make requests to unexpected destinations
+      - Exfiltrate sensitive data
+
+      The risk is especially high in modern web applications that fetch remote resources, and in cloud environments where metadata endpoints can provide access to cloud credentials.
+
+      Prevention strategies:
+      - Network layer:
+        - Segment remote resource access functionality
+        - Enforce "deny by default" firewall policies
+        - Use cloud-based security groups with tight restrictions
+
+      - Application layer:
+        - Sanitize and validate all client-supplied input data
+        - Enforce URL schema, port, and destination with a positive allow list
+        - Do not send raw responses to clients
+        - Disable HTTP redirections
+        - Be aware of URL consistency to prevent request forgery via path traversal
+
+      - Additional defenses:
+        - Don't deploy services with metadata endpoints accessible from containers/VMs
+        - Verify responses to prevent SSRF-based info leaks
+    resources:
+      - title: "OWASP Top 10: Server-Side Request Forgery"
+        url: "https://owasp.org/Top10/A10_2021-Server-Side_Request_Forgery_%28SSRF%29/"
+      - title: "PortSwigger SSRF Cheat Sheet"
+        url: "https://portswigger.net/web-security/ssrf"
