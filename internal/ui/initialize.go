@@ -6,11 +6,29 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-// AppModel represents the entire application
+// Represents the entire application
 type AppModel struct {
 	gameState     *game.GameState
 	activeView    tea.Model
 	width, height int
+}
+
+// Creates and configures a new BubbleTea program
+func InitializeUI(gameState *game.GameState) (*tea.Program, error) {
+	app := AppModel{
+		gameState:  gameState,
+		activeView: NewMainMenu(gameState, 80, 24), // Default size until window size message
+		width:      80,
+		height:     24,
+	}
+
+	program := tea.NewProgram(
+		app,
+		tea.WithAltScreen(),       // Use the full terminal screen
+		tea.WithMouseCellMotion(), // Enable mouse support
+	)
+
+	return program, nil
 }
 
 // Init initializes the application
@@ -125,22 +143,4 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 // View renders the application
 func (m AppModel) View() string {
 	return m.activeView.View()
-}
-
-// Creates and configures a new BubbleTea program
-func InitializeUI(gameState *game.GameState) (*tea.Program, error) {
-	app := AppModel{
-		gameState:  gameState,
-		activeView: NewMainMenu(gameState, 80, 24), // Default size until window size message
-		width:      80,
-		height:     24,
-	}
-
-	program := tea.NewProgram(
-		app,
-		tea.WithAltScreen(),       // Use the full terminal screen
-		tea.WithMouseCellMotion(), // Enable mouse support
-	)
-
-	return program, nil
 }

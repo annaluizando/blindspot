@@ -1,9 +1,7 @@
 package main
 
 import (
-	"fmt"
 	"log"
-	"os"
 
 	"secure-code-game/internal/game"
 	"secure-code-game/internal/ui"
@@ -17,12 +15,10 @@ func main() {
 
 	program, err := ui.InitializeUI(gameState)
 	if err != nil {
-		fmt.Println("Error initializing UI:", err)
-		os.Exit(1)
+		log.Fatal("Error initializing UI:", err)
 	}
 
 	if _, err := program.Run(); err != nil {
-		fmt.Println("Error running program:", err)
-		os.Exit(1)
+		log.Fatal("Error running program:", err)
 	}
 }

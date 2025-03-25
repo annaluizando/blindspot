@@ -113,24 +113,24 @@ func NewMainMenu(gs *game.GameState, width, height int) *MenuView {
 	items := []MenuItem{
 		{Title: "Start Game", Description: "Begin playing from where you left off"},
 		{Title: "Categories", Description: "Browse security challenge categories"},
-		{Title: "Settings", Description: "Configure game preferences"},
 		{Title: "Progress", Description: "View your progress statistics"},
+		{Title: "Settings", Description: "Configure game preferences"},
 		{Title: "Exit", Description: "Save and exit the game"},
 	}
 
 	return &MenuView{
 		type_:       MainMenu,
-		title:       "Security Code Trainer",
+		title:       "Security Code Game",
 		items:       items,
 		gameState:   gs,
 		help:        help.New(),
 		width:       width,
 		height:      height,
-		description: "Learn secure coding practices through interactive challenges. Identify and fix common security vulnerabilities based on the OWASP Top 10.",
+		description: "Learn secure coding practices through multiple choice challenges. Identify common security vulnerabilities based on the OWASP Top 10.",
 	}
 }
 
-// NewCategoryMenu creates a new category menu showing all categories regardless of difficulty
+// Creates a new category menu showing all categories
 func NewCategoryMenu(gs *game.GameState, width, height int, source MenuType) *MenuView {
 	items := make([]MenuItem, len(gs.ChallengeSets))
 
@@ -138,7 +138,6 @@ func NewCategoryMenu(gs *game.GameState, width, height int, source MenuType) *Me
 		// Calculate completion percentage for visual indicator
 		completed := gs.GetCategoryCompletionPercentage(set.Category)
 
-		// Format the completion information
 		completionText := fmt.Sprintf("[%d%% Complete]", completed)
 
 		// Check if there are challenges of different difficulty levels
@@ -193,7 +192,6 @@ func NewCategoryMenu(gs *game.GameState, width, height int, source MenuType) *Me
 	}
 }
 
-// NewChallengeMenu creates a new challenge menu
 func NewChallengeMenu(gs *game.GameState, categoryIndex int, width, height int, source MenuType) *MenuView {
 	category := gs.ChallengeSets[categoryIndex]
 	items := make([]MenuItem, len(category.Challenges))
@@ -238,7 +236,7 @@ func NewChallengeMenu(gs *game.GameState, categoryIndex int, width, height int, 
 	}
 }
 
-// NewProgressMenu creates a new progress view showing completion across all categories
+// Creates a new progress view showing completion across all categories
 func NewProgressMenu(gs *game.GameState, width, height int) *MenuView {
 	items := make([]MenuItem, len(gs.ChallengeSets))
 
@@ -427,24 +425,23 @@ func (m *MenuView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						return SelectChallengeMsg{Challenge: challenge}
 					}
 				case 1: // Categories
-					// Create a new category menu with MainMenu as the source
 					newMenu := NewCategoryMenu(m.gameState, m.width, m.height, MainMenu)
 					return newMenu, nil
-				case 2: // Settings
-					newMenu := NewSettingsMenu(m.gameState, m.width, m.height)
-					return newMenu, nil
-				case 3: // Progress
+				case 2: // Progress
 					newMenu := NewProgressMenu(m.gameState, m.width, m.height)
+					return newMenu, nil
+				case 3: // Settings
+					newMenu := NewSettingsMenu(m.gameState, m.width, m.height)
 					return newMenu, nil
 				case 4: // Exit
 					return m, tea.Quit
 				}
 			} else if m.type_ == CategoryMenu {
-				// Create a new challenge menu with CategoryMenu as the source
+				// Create a new challenge menu when coming from Category Menu
 				newMenu := NewChallengeMenu(m.gameState, m.cursor, m.width, m.height, m.type_)
 				return newMenu, nil
 			} else if m.type_ == ProgressMenu {
-				// Create a new challenge menu with ProgressMenu as the source
+				// Create a new challenge menu when coming from Progress Menu
 				newMenu := NewChallengeMenu(m.gameState, m.cursor, m.width, m.height, m.type_)
 				return newMenu, nil
 			} else if m.type_ == ChallengeMenu {

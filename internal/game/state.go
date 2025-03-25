@@ -8,19 +8,16 @@ import (
 	"secure-code-game/internal/challenges"
 )
 
-// UserProgress tracks which challenges have been completed
 type UserProgress struct {
-	CompletedChallenges map[string]bool `json:"completedChallenges"` // Maps challenge ID to completion status
+	CompletedChallenges map[string]bool `json:"completedChallenges"`
 	CurrentCategoryIdx  int             `json:"currentCategoryIdx"`
 	CurrentChallengeIdx int             `json:"currentChallengeIdx"`
 }
 
-// UserSettings stores user preferences for the game
 type UserSettings struct {
 	ShowVulnerabilityNames bool `json:"showVulnerabilityNames"`
 }
 
-// Update GameState struct to include the vulnerability explanations
 type GameState struct {
 	ChallengeSets             []challenges.ChallengeSet
 	CurrentCategoryIdx        int
@@ -31,15 +28,13 @@ type GameState struct {
 	VulnerabilityExplanations map[string]challenges.VulnerabilityInfo
 }
 
-// NewGameState initializes a new game state
 func NewGameState() (*GameState, error) {
-	// Get user config directory
 	configDir, err := getConfigDir()
 	if err != nil {
 		return nil, err
 	}
 
-	// Load challenges
+	// Load challenges from challenges.yaml
 	challengeSets, err := challenges.LoadChallenges()
 	if err != nil {
 		return nil, err
@@ -61,11 +56,10 @@ func NewGameState() (*GameState, error) {
 	if err != nil {
 		// If no settings file exists, create a new one with defaults
 		settings = UserSettings{
-			ShowVulnerabilityNames: true, // Default: show vulnerability names
+			ShowVulnerabilityNames: false,
 		}
 	}
 
-	// Load vulnerability explanations
 	vulnExplanations, err := challenges.LoadVulnerabilityExplanations()
 	if err != nil {
 		// Just log the error but continue - this is non-critical
@@ -84,31 +78,30 @@ func NewGameState() (*GameState, error) {
 	}, nil
 }
 
-// Add a helper method to get explanation for a specific challenge
+// Helper method to get explanation for a specific challenge
 func (gs *GameState) GetVulnerabilityExplanation(challenge challenges.Challenge) (challenges.VulnerabilityInfo, bool) {
 	explanation, found := gs.VulnerabilityExplanations[challenge.Category]
 	return explanation, found
 }
 
-// ToggleShowVulnerabilityNames toggles the setting for showing vulnerability names
+// Helper method to toggle setting for showing vulnerability names
 func (gs *GameState) ToggleShowVulnerabilityNames() {
 	gs.Settings.ShowVulnerabilityNames = !gs.Settings.ShowVulnerabilityNames
 	gs.SaveSettings()
 }
 
-// IsChallengeCompleted checks if a challenge has been completed
+// Checks if a challenge has been completed
 func (gs *GameState) IsChallengeCompleted(challengeID string) bool {
 	return gs.Progress.CompletedChallenges[challengeID]
 }
 
-// MarkChallengeCompleted marks a challenge as completed
 func (gs *GameState) MarkChallengeCompleted(challengeID string) {
 	gs.Progress.CompletedChallenges[challengeID] = true
 	// Save progress after marking challenge completed
 	gs.SaveProgress()
 }
 
-// GetCategoryCompletionPercentage calculates completion percentage for a category
+// Calculates completion percentage for a category
 func (gs *GameState) GetCategoryCompletionPercentage(category string) int {
 	var total, completed int
 
@@ -132,7 +125,7 @@ func (gs *GameState) GetCategoryCompletionPercentage(category string) int {
 	return (completed * 100) / total
 }
 
-// GetTotalCompletionPercentage calculates overall completion percentage
+// Calculates overall completion percentage
 func (gs *GameState) GetTotalCompletionPercentage() int {
 	var total, completed int
 
@@ -152,12 +145,11 @@ func (gs *GameState) GetTotalCompletionPercentage() int {
 	return (completed * 100) / total
 }
 
-// GetCurrentChallenge returns the current challenge
+// Returns the current challenge
 func (gs *GameState) GetCurrentChallenge() challenges.Challenge {
 	return gs.ChallengeSets[gs.CurrentCategoryIdx].Challenges[gs.CurrentChallengeIdx]
 }
 
-// MoveToNextChallenge advances to the next challenge
 func (gs *GameState) MoveToNextChallenge() bool {
 	currentSet := gs.ChallengeSets[gs.CurrentCategoryIdx]
 
@@ -183,7 +175,6 @@ func (gs *GameState) MoveToNextChallenge() bool {
 	return false
 }
 
-// GetNextIncompleteChallenge finds the next incomplete challenge
 func (gs *GameState) GetNextIncompleteChallenge() (challenges.Challenge, bool) {
 	// Start from current position
 	startCategoryIdx := gs.CurrentCategoryIdx
@@ -215,7 +206,7 @@ func (gs *GameState) GetNextIncompleteChallenge() (challenges.Challenge, bool) {
 				maxChallengeIdx = startChallengeIdx
 			}
 
-			for challengeIdx := 0; challengeIdx < maxChallengeIdx; challengeIdx++ {
+			for challengeIdx := range maxChallengeIdx {
 				challenge := gs.ChallengeSets[categoryIdx].Challenges[challengeIdx]
 				if !gs.IsChallengeCompleted(challenge.ID) {
 					return challenge, true
@@ -228,7 +219,7 @@ func (gs *GameState) GetNextIncompleteChallenge() (challenges.Challenge, bool) {
 	return challenges.Challenge{}, false
 }
 
-// LoadProgress loads user progress from file
+// Loads user progress from file
 func loadProgress(configDir string) (UserProgress, error) {
 	progressPath := filepath.Join(configDir, "progress.json")
 
@@ -250,14 +241,14 @@ func loadProgress(configDir string) (UserProgress, error) {
 	return progress, nil
 }
 
-// LoadSettings loads user settings from file
+// Loads user settings from file
 func loadSettings(configDir string) (UserSettings, error) {
 	settingsPath := filepath.Join(configDir, "settings.json")
 
 	data, err := os.ReadFile(settingsPath)
 	if err != nil {
 		return UserSettings{
-			ShowVulnerabilityNames: true, // Default value
+			ShowVulnerabilityNames: false, // Default value
 		}, err
 	}
 
@@ -265,14 +256,14 @@ func loadSettings(configDir string) (UserSettings, error) {
 	err = json.Unmarshal(data, &settings)
 	if err != nil {
 		return UserSettings{
-			ShowVulnerabilityNames: true, // Default value
+			ShowVulnerabilityNames: false, // Default value
 		}, err
 	}
 
 	return settings, nil
 }
 
-// SaveProgress saves the current user progress
+// Saves the current user progress
 func (gs *GameState) SaveProgress() error {
 	progressPath := filepath.Join(gs.ConfigDir, "progress.json")
 
@@ -288,7 +279,7 @@ func (gs *GameState) SaveProgress() error {
 	return os.WriteFile(progressPath, data, 0644)
 }
 
-// SaveSettings saves the current user settings
+// Saves the current user settings
 func (gs *GameState) SaveSettings() error {
 	settingsPath := filepath.Join(gs.ConfigDir, "settings.json")
 
@@ -307,7 +298,7 @@ func getConfigDir() (string, error) {
 		return "", err
 	}
 
-	configDir := filepath.Join(homeDir, ".security-game")
+	configDir := filepath.Join(homeDir, ".secure-code-game")
 	if err := os.MkdirAll(configDir, 0755); err != nil {
 		return "", err
 	}
