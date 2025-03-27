@@ -130,7 +130,7 @@ func RenderBox(content string, title string) string {
 		Padding(1, 2)
 
 	if title != "" {
-		return boxStyle.BorderTop(true).Copy().Render(
+		return boxStyle.BorderTop(true).Render(
 			lipgloss.JoinVertical(
 				lipgloss.Left,
 				lipgloss.NewStyle().Foreground(primaryColor).Bold(true).Render(" "+title+" "),
