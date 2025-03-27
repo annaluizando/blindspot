@@ -14,7 +14,7 @@ type Resource struct {
 	URL   string `yaml:"url"`
 }
 
-// VulnerabilityInfo contains detailed information about a security vulnerability
+// contains detailed information about a security vulnerability
 type VulnerabilityInfo struct {
 	Name             string     `yaml:"name"`
 	ShortDescription string     `yaml:"short_description"`
@@ -22,12 +22,12 @@ type VulnerabilityInfo struct {
 	Resources        []Resource `yaml:"resources"`
 }
 
-// VulnerabilitiesData represents the structure of the vulnerabilities.yaml file
+// represents the structure of the vulnerabilities.yaml file
 type VulnerabilitiesData struct {
 	Vulnerabilities []VulnerabilityInfo `yaml:"vulnerabilities"`
 }
 
-// LoadVulnerabilityExplanations loads vulnerability explanations from the YAML file
+// loads vulnerability explanations from the YAML file
 func LoadVulnerabilityExplanations() (map[string]VulnerabilityInfo, error) {
 	searchPaths := []string{
 		"assets/vuln_explanations.yaml",       // From project root
@@ -55,7 +55,6 @@ func LoadVulnerabilityExplanations() (map[string]VulnerabilityInfo, error) {
 			yamlData, err = os.ReadFile(yamlPath)
 		}
 
-		// If still not found, return error
 		if err != nil {
 			return nil, fmt.Errorf("could not find vulnerabilities.yaml: %w", err)
 		}

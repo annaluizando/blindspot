@@ -8,7 +8,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// ChallengeType represents different types of security challenges
 type ChallengeType int
 
 const (
@@ -24,35 +23,34 @@ const (
 	Advanced
 )
 
-// Challenge represents a security coding challenge
 type Challenge struct {
-	ID            string          `yaml:"id"`            // Unique identifier
-	Title         string          `yaml:"title"`         // Challenge title
-	Description   string          `yaml:"description"`   // Challenge description
-	Type          ChallengeType   `yaml:"type"`          // Multiple choice or code fix
-	Difficulty    DifficultyLevel `yaml:"difficulty"`    // Difficulty level
+	ID            string          `yaml:"id"`
+	Title         string          `yaml:"title"`
+	Description   string          `yaml:"description"`
+	Type          ChallengeType   `yaml:"type"` // Multiple choice or code fix
+	Difficulty    DifficultyLevel `yaml:"difficulty"`
 	Category      string          `yaml:"category"`      // Security category (e.g., "SQL Injection")
 	Code          string          `yaml:"code"`          // The vulnerable code to display
 	Options       []string        `yaml:"options"`       // For multiple choice: possible answers
 	CorrectAnswer string          `yaml:"correctAnswer"` // For multiple choice: correct option
 	Hint          string          `yaml:"hint"`          // Optional hint for the user
 	Solution      string          `yaml:"solution"`      // For code fix: a sample correct solution
-	Tags          []string        `yaml:"tags"`          // Tags for filtering challenges
+	Lang          string          `yaml:"lang"`          // programming language in challenge's code
 }
 
-// ChallengeSet represents a group of related challenges
+// group of related challenges
 type ChallengeSet struct {
 	Category    string      `yaml:"category"`    // Category name
 	Description string      `yaml:"description"` // Category description
 	Challenges  []Challenge `yaml:"challenges"`  // Challenges in this category
 }
 
-// YAMLChallenges represents the structure of the YAML file
+// structure of the YAML file
 type YAMLChallenges struct {
-	ChallengeSets []ChallengeSet `yaml:"challengeSets"` // Changed from "Sets" to "challengeSets"
+	ChallengeSets []ChallengeSet `yaml:"challengeSets"`
 }
 
-// LoadChallenges loads all challenges from the YAML file
+// loads all challenges from the YAML file
 func LoadChallenges() ([]ChallengeSet, error) {
 	// Look for challenges.yaml in multiple locations
 	searchPaths := []string{
@@ -85,7 +83,6 @@ func LoadChallenges() ([]ChallengeSet, error) {
 			}
 		}
 
-		// If still not found, return error
 		if err != nil {
 			return nil, err
 		}

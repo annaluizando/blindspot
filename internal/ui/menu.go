@@ -145,7 +145,7 @@ func (m *MenuView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					newMenu := NewProgressMenu(m.gameState, m.width, m.height)
 					return newMenu, nil
 				}
-				newMenu := NewCategoryMenu(m.gameState, m.width, m.height, MainMenu)
+				newMenu := NewCategoriesMenu(m.gameState, m.width, m.height, MainMenu)
 				return newMenu, nil
 			} else if m.type_ == ProgressMenu {
 				// When in progress menu, go back to main menu
@@ -176,7 +176,7 @@ func (m *MenuView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						return SelectChallengeMsg{Challenge: challenge}
 					}
 				case 1: // Categories
-					newMenu := NewCategoryMenu(m.gameState, m.width, m.height, MainMenu)
+					newMenu := NewCategoriesMenu(m.gameState, m.width, m.height, MainMenu)
 					return newMenu, nil
 				case 2: // Progress
 					newMenu := NewProgressMenu(m.gameState, m.width, m.height)
@@ -188,11 +188,11 @@ func (m *MenuView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, tea.Quit
 				}
 			} else if m.type_ == CategoryMenu {
-				newMenu := NewChallengeMenu(m.gameState, m.cursor, m.width, m.height, m.type_)
+				newMenu := NewCategoryMenu(m.gameState, m.cursor, m.width, m.height, m.type_)
 				return newMenu, nil
 			} else if m.type_ == ProgressMenu {
 				// Create a new challenge menu when coming from Progress Menu
-				newMenu := NewChallengeMenu(m.gameState, m.cursor, m.width, m.height, m.type_)
+				newMenu := NewCategoryMenu(m.gameState, m.cursor, m.width, m.height, m.type_)
 				return newMenu, nil
 			} else if m.type_ == ChallengeMenu {
 				if strings.HasPrefix(m.items[m.cursor].ID, "explanation-") {
@@ -315,7 +315,7 @@ func NewMainMenu(gs *game.GameState, width, height int) *MenuView {
 }
 
 // creates new menu for all categories display
-func NewCategoryMenu(gs *game.GameState, width, height int, source MenuType) *MenuView {
+func NewCategoriesMenu(gs *game.GameState, width, height int, source MenuType) *MenuView {
 	items := make([]MenuItem, len(gs.ChallengeSets))
 
 	for i, set := range gs.ChallengeSets {
@@ -374,7 +374,7 @@ func NewCategoryMenu(gs *game.GameState, width, height int, source MenuType) *Me
 	}
 }
 
-func NewChallengeMenu(gs *game.GameState, categoryIndex int, width, height int, source MenuType) *MenuView {
+func NewCategoryMenu(gs *game.GameState, categoryIndex int, width, height int, source MenuType) *MenuView {
 	category := gs.ChallengeSets[categoryIndex]
 
 	var items []MenuItem
@@ -504,7 +504,7 @@ func NewProgressMenu(gs *game.GameState, width, height int) *MenuView {
 
 	description := fmt.Sprintf("Overall Progress: %d of %d challenges completed (%d%%)\n\n",
 		completedChallenges, totalChallenges, overallPercentage)
-	description += "Select a category to see detailed progress statistics. Press Enter on a category to view its challenges."
+	description += "Select a category to see detailed progress statistics.\nPress Enter on a category to view its challenges."
 
 	return &MenuView{
 		type_:       ProgressMenu,
@@ -514,7 +514,7 @@ func NewProgressMenu(gs *game.GameState, width, height int) *MenuView {
 		help:        help.New(),
 		width:       width,
 		height:      height,
-		description: description,
+		description: utils.WrapText(description, width),
 		sourceMenu:  MainMenu,
 	}
 }
@@ -540,8 +540,8 @@ func NewSettingsMenu(gs *game.GameState, width, height int) *MenuView {
 		{
 			Title: "Game Mode: " + orderModeText,
 			Description: "Choose how challenges are ordered when playing the game.\n" +
-				"Category Order: Play challenges grouped by vulnerabilty category.\n" +
-				"Random by Difficulty: Play challenges in random order but grouped by difficulty level (beginner, intermediate, advanced).",
+				"Category Order: Play challenges grouped by vulnerabilty category. (Standard Mode)\n" +
+				"Random by Difficulty: Play challenges in random order but grouped by difficulty level. (More challenging mode, specially if combined with 'Vulnerability Names: Hide')",
 			ID: "setting-ordermode",
 		},
 		{

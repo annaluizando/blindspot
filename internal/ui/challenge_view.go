@@ -220,13 +220,10 @@ func (m *ChallengeView) View() string {
 
 	// Detect language from the challenge code to highlight
 	language := ""
-	if len(m.challenge.Tags) > 0 {
-		for _, tag := range m.challenge.Tags {
-			lang := utils.GetLanguageFromExtension(tag)
-			if lang != "" {
-				language = lang
-				break
-			}
+	if len(m.challenge.Lang) > 0 {
+		lang := utils.GetLanguageFromExtension(m.challenge.Lang)
+		if lang != "" {
+			language = lang
 		}
 	}
 

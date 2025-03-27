@@ -243,7 +243,6 @@ func (gs *GameState) MoveToNextChallenge() bool {
 }
 
 func (gs *GameState) GetNextIncompleteChallenge() (challenges.Challenge, bool) {
-	// Start from current position
 	startCategoryIdx := gs.CurrentCategoryIdx
 	startChallengeIdx := gs.CurrentChallengeIdx
 

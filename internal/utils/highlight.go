@@ -10,15 +10,12 @@ import (
 )
 
 func HighlightCode(code string, language string) string {
-	// Trim any leading/trailing whitespace
 	code = strings.TrimSpace(code)
 
-	// If language is not specified, try to detect it
 	var lexer chroma.Lexer
 	if language == "" {
 		lexer = lexers.Analyse(code)
 		if lexer == nil {
-			// If analysis fails, default to go
 			lexer = lexers.Get("go")
 		}
 	} else {
@@ -27,13 +24,11 @@ func HighlightCode(code string, language string) string {
 			// If specified language not found, try to detect
 			lexer = lexers.Analyse(code)
 			if lexer == nil {
-				// If all else fails, default to go
-				lexer = lexers.Get("go")
+				return code
 			}
 		}
 	}
 
-	// Use the "monokai" style - good for dark terminals
 	style := styles.Get("monokai")
 	if style == nil {
 		style = styles.Fallback
@@ -48,43 +43,19 @@ func HighlightCode(code string, language string) string {
 	// Tokenize the code
 	iterator, err := lexer.Tokenise(nil, code)
 	if err != nil {
-		return code // Return original code if highlighting fails
+		return code
 	}
 
 	// Create a buffer to hold the highlighted code
 	var buf strings.Builder
 	err = formatter.Format(&buf, style, iterator)
 	if err != nil {
-		return code // Return original code if formatting fails
+		return code
 	}
 
 	return buf.String()
 }
 
-// HighlightVulnerability takes a code string and highlights a specific line or pattern
-// that contains the vulnerability to make it more obvious
-func HighlightVulnerability(code string, vulnerablePattern string) string {
-	if vulnerablePattern == "" {
-		return code // Return unchanged if no pattern provided
-	}
-
-	// Simple implementation: just highlight the vulnerable part with terminal escapes
-	// This assumes we're using a terminal that supports ANSI color codes
-	const redBackground = "\x1b[41m" // Red background
-	const resetColor = "\x1b[0m"     // Reset colors
-
-	// Replace the pattern with a highlighted version
-	highlighted := strings.Replace(
-		code,
-		vulnerablePattern,
-		redBackground+vulnerablePattern+resetColor,
-		-1,
-	)
-
-	return highlighted
-}
-
-// GetLanguageFromExtension tries to determine language from file extension
 func GetLanguageFromExtension(filename string) string {
 	parts := strings.Split(filename, ".")
 	if len(parts) < 2 {
@@ -118,4 +89,28 @@ func GetLanguageFromExtension(filename string) string {
 	default:
 		return "" // Unknown extension
 	}
+}
+
+// To be used in code fix
+// takes a code string and highlights a specific line or pattern
+// that contains the vulnerability to make it more obvious
+func HighlightVulnerability(code string, vulnerablePattern string) string {
+	if vulnerablePattern == "" {
+		return code // Return unchanged if no pattern provided
+	}
+
+	// Simple implementation: just highlight the vulnerable part with terminal escapes
+	// This assumes we're using a terminal that supports ANSI color codes
+	const redBackground = "\x1b[41m" // Red background
+	const resetColor = "\x1b[0m"     // Reset colors
+
+	// Replace the pattern with a highlighted version
+	highlighted := strings.Replace(
+		code,
+		vulnerablePattern,
+		redBackground+vulnerablePattern+resetColor,
+		-1,
+	)
+
+	return highlighted
 }

@@ -30,10 +30,7 @@ challengeSets:
           - "The endpoint doesn't use HTTPS"
         correctAnswer: "The endpoint doesn't validate if the user is authorized to access the document"
         hint: "The function retrieves and returns any document without checking if the current user has permission to access it."
-        tags:
-          - "access-control"
-          - "idor"
-          - "beginner"
+        lang: "Go"
 
       - id: "broken-access-control-2"
         title: "Missing Function Level Access Control"
@@ -61,10 +58,7 @@ challengeSets:
           - "The router isn't using HTTPS for admin endpoints"
         correctAnswer: "The router doesn't apply authentication/authorization middleware"
         hint: "How does the application verify that only administrators can access these endpoints?"
-        tags:
-          - "access-control"
-          - "authorization"
-          - "intermediate"
+        lang: "Go"
 
   - category: "A02:2021 – Cryptographic Failures"
     description: "Failures related to cryptography that often lead to sensitive data exposure or system compromise."
@@ -95,11 +89,7 @@ challengeSets:
           - "The database query is vulnerable to injection"
         correctAnswer: "The function uses MD5, which is not secure for password hashing"
         hint: "Look at the algorithm used for storing passwords. Is it suitable for this purpose?"
-        tags:
-          - "crypto"
-          - "password"
-          - "hashing"
-          - "beginner"
+        lang: "Go"
 
       - id: "crypto-2"
         title: "Hardcoded Encryption Key"
@@ -139,11 +129,7 @@ challengeSets:
           - "The AES cipher is used in an insecure mode"
         correctAnswer: "The encryption key is hardcoded in the source code"
         hint: "Where is the encryption key stored and how is it managed?"
-        tags:
-          - "crypto"
-          - "encryption"
-          - "key-management"
-          - "intermediate"
+        lang: "Go"
 
   - category: "A03:2021 – Injection"
     description: "Injection flaws occur when untrusted data is sent to an interpreter as part of a command or query."
@@ -170,10 +156,7 @@ challengeSets:
           - "The function doesn't check for empty inputs"
         correctAnswer: "The function doesn't escape special characters in the input"
         hint: "Look at how the query string is constructed. What happens if the username or password contains SQL syntax?"
-        tags:
-          - "sql"
-          - "injection"
-          - "beginner"
+        lang: "PHP"
 
       - id: "sql-injection-2"
         title: "SQL Injection in a Web Handler"
@@ -204,11 +187,7 @@ challengeSets:
           - "The handler sends sensitive information without encryption"
         correctAnswer: "The handler doesn't sanitize user input and is vulnerable to SQL injection"
         hint: "Notice how the userID parameter is included in the SQL query."
-        tags:
-          - "sql"
-          - "injection"
-          - "web"
-          - "intermediate"
+        lang: "Go"
 
       - id: "command-injection-1"
         title: "Command Injection in Exec"
@@ -232,11 +211,7 @@ challengeSets:
           - "The output isn't properly sanitized before returning"
         correctAnswer: "The function is vulnerable to command injection"
         hint: "Think about what happens if serverAddress contains special shell characters."
-        tags:
-          - "command"
-          - "injection"
-          - "exec"
-          - "beginner"
+        lang: "Go"
 
   - category: "A04:2021 – Insecure Design"
     description: "Insecure design refers to flaws in application design and architecture rather than implementation bugs."
@@ -290,11 +265,7 @@ challengeSets:
           - "All of the above"
         correctAnswer: "All of the above"
         hint: "Consider the entire password recovery flow. What would make this more secure?"
-        tags:
-          - "design"
-          - "authentication"
-          - "password-recovery"
-          - "intermediate"
+        lang: "Go"
 
   - category: "A05:2021 – Security Misconfiguration"
     description: "Security misconfiguration is commonly a result of insecure default configurations."
@@ -332,11 +303,7 @@ challengeSets:
           - "The function doesn't close the database connection"
         correctAnswer: "The function returns detailed error messages to the client"
         hint: "What information might be exposed in the error message that could help an attacker?"
-        tags:
-          - "misconfiguration"
-          - "error-handling"
-          - "information-disclosure"
-          - "beginner"
+        lang: "Go"
 
   - category: "A06:2021 – Vulnerable and Outdated Components"
     description: "Using components with known vulnerabilities can undermine application defenses and enable various attacks."
@@ -369,11 +336,7 @@ challengeSets:
           - "The file doesn't specify exact versions"
         correctAnswer: "The file is using outdated dependencies with known vulnerabilities"
         hint: "Check the version numbers. Many of these packages have had serious vulnerabilities discovered after these versions were released."
-        tags:
-          - "dependencies"
-          - "outdated"
-          - "npm"
-          - "beginner"
+        lang: "json"
 
   - category: "A07:2021 – Identification and Authentication Failures"
     description: "Authentication failures related to user identity, authentication, and session management."
@@ -402,10 +365,7 @@ challengeSets:
           - "The function doesn't check if the user exists"
         correctAnswer: "The session token is predictable and can be guessed"
         hint: "How is the session token generated? Is there any randomness?"
-        tags:
-          - "authentication"
-          - "session"
-          - "intermediate"
+        lang: "Go"
 
       - id: "auth-2"
         title: "Weak Password Policy"
@@ -429,11 +389,7 @@ challengeSets:
           - "All of the above"
         correctAnswer: "All of the above"
         hint: "What makes a strong password policy?"
-        tags:
-          - "authentication"
-          - "password"
-          - "validation"
-          - "beginner"
+        lang: "Javascript"
 
   - category: "A08:2021 – Software and Data Integrity Failures"
     description: "Software and data integrity failures relate to code and infrastructure that does not protect against integrity violations."
@@ -473,11 +429,7 @@ challengeSets:
           - "The function doesn't handle errors properly"
         correctAnswer: "The function accepts any JSON without verification"
         hint: "What prevents an attacker from modifying the cookie to inject unexpected values?"
-        tags:
-          - "deserialization"
-          - "integrity"
-          - "cookies"
-          - "intermediate"
+        lang: "Go"
 
   - category: "A09:2021 – Security Logging and Monitoring Failures"
     description: "This category helps detect, escalate, and respond to active breaches. Without logging and monitoring, breaches cannot be detected."
@@ -516,11 +468,7 @@ challengeSets:
           - "The function doesn't sanitize inputs"
         correctAnswer: "The function doesn't log failed login attempts"
         hint: "How would you detect brute force attacks or compromised accounts?"
-        tags:
-          - "logging"
-          - "monitoring"
-          - "authentication"
-          - "beginner"
+        lang: "Go"
 
   - category: "A10:2021 – Server-Side Request Forgery"
     description: "SSRF flaws occur when a web application fetches a remote resource without validating the user-supplied URL."
@@ -561,8 +509,4 @@ challengeSets:
           - "The function doesn't check the response content type"
         correctAnswer: "The function doesn't validate or sanitize the URL parameter"
         hint: "What happens if the URL points to an internal network resource?"
-        tags:
-          - "ssrf"
-          - "request-forgery"
-          - "url-validation"
-          - "intermediate"
+        lang: "Go"

@@ -1,34 +1,4 @@
-secure-code-game/
-├── cmd/
-│ └── security-game/
-│ └── main.go # Entry point for the application
-├── internal/
-│ ├── challenges/ # Package for all security challenges
-│ │ ├── challenge.go # Challenge interface definition
-│ │ ├── injection/ # OWASP category: Injection, will be useful on section 2 (pratical exercises)
-│ │ │ ├── sql.go # SQL injection challenges
-│ │ │ └── command.go # Command injection challenges
-│ │ ├── auth/ # OWASP category: Broken Authentication, will be useful on section 2 (pratical exercises)
-│ │ │ └── password.go # Password-related challenges
-│ │ └── ... # Other OWASP categories
-│ ├── ui/ # UI components using Bubbletea
-│ │ ├── styles.go # Common styles/themes for the UI
-│ │ ├── challenge_view.go # View for displaying challenges
-│ │ ├── editor_view.go # Code editor component, will be useful on section 2 (pratical exercises)
-│ │ ├── quiz_view.go # Multiple choice component
-│ │ └── menu.go # Navigation menu
-│ ├── game/ # Game logic
-│ │ ├── state.go # Game state management
-│ │ ├── progress.go # User progress tracking
-│ │ └── validator.go # Code validation logic
-│ └── utils/ # Utility functions
-│ └── highlight.go # Syntax highlighting
-├── assets/ # Static assets
-│ └── challenges.yaml # Challenge definitions
-├── go.mod # Go module file
-└── go.sum # Go dependencies
-
-# 🛡️ Secure Code Game !
+# 🔦 blindspot - security code game!
 
 A CLI-based interactive game designed to train yourself to identify insecure coding practices based on the OWASP Top 10, in a practical and fun way!
 
@@ -38,6 +8,37 @@ Feel free to play, analyze, modify, and contribute. New ideas and collaborations
 
 - **Golang** - Core language
 - [**BubbleTea**](https://github.com/charmbracelet/bubbletea) - Terminal UI framework
+
+## 📁 Project Structure
+
+```
+blindspot/
+├── cmd/
+│   └── game/
+│       └── main.go                  # Entry point for the application
+├── internal/
+│   ├── challenges/                  # Package for all security challenges
+│   │   ├── challenge.go             # Responsible for loading all challenges
+│   │   └── vuln_explanation.go      # Responsible for loading all vulnerabilities explanation
+│   ├── ui/                          # UI components using Bubbletea
+│   │   ├── styles.go                # Common styles/themes for the UI
+│   │   ├── challenge_view.go        # View for displaying challenges
+│   │   ├── vuln_explanation_view.go # View for displaying vulnerability explanation
+│   │   ├── quiz_view.go             # Multiple choice component
+│   │   └── menu.go                  # Navigation menu
+│   ├── game/                        # Game logic
+│   │   ├── state.go                 # Game state management
+│   │   ├── progress.go              # User progress/statistics tracking
+│   │   └── validator.go             # Code validation logic
+│   └── utils/
+│       └── highlight.go             # Syntax code highlighting
+│       └── wrapText.go              # Text wrap according to terminal  width
+├── assets/                          # Static assets
+│   └── challenges.yaml              # Challenge definitions
+│   └── vuln_explanations.yaml       # Vulnerabilities Explanations defitions
+├── go.mod                           # Go module file
+└── go.sum                           # Go dependencies
+```
 
 ## ✨ Features
 
@@ -66,6 +67,36 @@ Track your learning journey through each vulnerability category wit completion p
 - Press `n` or `Enter` to go to next challenge
 - Press `q` to quit at any time
 
+## FAQ
+
+### Q: I want to write my own challenges, how can I do this?
+
+A: You can accomplish this by changing your assets/challenges.yaml and filling information according
+your questions. Each question needs to be in the following format:
+
+- category: string, all categories must have equal string to be in same category,
+  description: string,
+  challenges:
+
+  - id: string,
+    title: string, name of vulnerability,
+    description: string, with brief description about problem,
+    type: 0 for a Multiple Choice question,
+    difficulty: 0 for Beginner, 1 for Intermediate and 2 for Advanced,
+    category: string,
+    code: |
+
+    - your code pasted here -
+
+    options:
+
+    - "Option A"
+    - "Option B"
+    - "Option C"
+      correctAnswer: string, equal to one of options,
+      hint: string,
+      lang: string, preferebly one of [supported languages in chroma lib](https://github.com/alecthomas/chroma?tab=readme-ov-file#supported-languages) for code highlighthing
+
 ## To-Do
 
 ### Completed
@@ -79,15 +110,17 @@ Track your learning journey through each vulnerability category wit completion p
 - [x] Add ability to skip challenges
 - [x] Include vulnerability explanations in category sections
 - [x] Fix some texts line break (menu screen)
+- [x] Resolve bug in game mode toggle
 
 ### In Progress
 
 - [ ] Add Section 2 for practical exercises
 - [ ] Implement adaptive text color based on terminal theme
 - [ ] Fix and improve help text clarity
-- [ ] Complete manual review of all challenges
+- [ ] Complete manual review of challenges.yaml
 - [ ] Correct vuln explanation to go back to its origin and not main menu when user presses back key
 - [ ] Add Congratulation screen when finishing all challenges
+- [ ] Add user errors count in each category for statistics
 
 ## 📜 License
 
