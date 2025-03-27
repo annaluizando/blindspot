@@ -14,11 +14,11 @@ import (
 	"secure-code-game/internal/utils"
 )
 
-// These messages are used to navigate after showing the explanation
+// messages used to navigate after showing vulnerability explanation
 type nextChallengeMsg struct{}
 type backToMenuMsg struct{}
 
-// ExplanationKeyMap defines keybindings for the explanation view
+// defines keybindings for the explanation view
 type ExplanationKeyMap struct {
 	Next key.Binding
 	Back key.Binding
@@ -26,12 +26,12 @@ type ExplanationKeyMap struct {
 	Quit key.Binding
 }
 
-// ShortHelp returns keybindings to be shown in the mini help view.
+// returns keybindings to be shown in reduced help view.
 func (k ExplanationKeyMap) ShortHelp() []key.Binding {
 	return []key.Binding{k.Help, k.Quit}
 }
 
-// FullHelp returns keybindings for the expanded help view.
+// returns keybindings for expanded help view.
 func (k ExplanationKeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{k.Next, k.Back}, // Actions
@@ -115,7 +115,6 @@ func (v *ExplanationView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case key.Matches(msg, ExplanationKeys.Next):
 			if v.isFromCompletion {
-				// Go to next challenge if this was shown after completing a challenge
 				return v, func() tea.Msg {
 					return nextChallengeMsg{}
 				}
@@ -123,28 +122,26 @@ func (v *ExplanationView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				// If viewing from category menu, go back to category view
 				for i, set := range v.gameState.ChallengeSets {
 					if set.Category == v.challenge.Category {
-						return NewChallengeMenu(v.gameState, i, v.width, v.height, v.sourceMenu), nil
+						return NewCategoryMenu(v.gameState, i, v.width, v.height, v.sourceMenu), nil
 					}
 				}
 			}
 
-			// If we came from the challenge menu, go back to that menu
 			if v.sourceMenu == ChallengeMenu {
 				// Find the category index
 				for i, set := range v.gameState.ChallengeSets {
 					if set.Category == v.challenge.Category {
-						return NewChallengeMenu(v.gameState, i, v.width, v.height, v.sourceMenu), nil
+						return NewCategoryMenu(v.gameState, i, v.width, v.height, v.sourceMenu), nil
 					}
 				}
 			}
 
 		case key.Matches(msg, ExplanationKeys.Back):
-			// If we came from the challenge menu, go back to that menu
 			if v.sourceMenu == ChallengeMenu {
 				// Find the category index
 				for i, set := range v.gameState.ChallengeSets {
 					if set.Category == v.challenge.Category {
-						return NewChallengeMenu(v.gameState, i, v.width, v.height, v.sourceMenu), nil
+						return NewCategoryMenu(v.gameState, i, v.width, v.height, v.sourceMenu), nil
 					}
 				}
 			}
@@ -174,10 +171,8 @@ func (v *ExplanationView) View() string {
 		b.WriteString(explanationHighlightStyle.Render("Vulnerability Explanation") + "\n\n")
 	}
 
-	// Vulnerability name and category
 	b.WriteString(fmt.Sprintf("Vulnerability Category: %s\n\n", explanationHighlightStyle.Render(v.challenge.Category)))
 
-	// Explanation
 	if v.explanationFound {
 		// Short description
 		b.WriteString(explanationSubtitleStyle.Render("What is this vulnerability?") + "\n")
