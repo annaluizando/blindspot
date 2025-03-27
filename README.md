@@ -74,6 +74,7 @@ Track your learning journey through each vulnerability category wit completion p
 A: You can accomplish this by changing your assets/challenges.yaml and filling information according
 your questions. Each question needs to be in the following format:
 
+```yaml
 - category: string, all categories must have equal string to be in same category,
   description: string,
   challenges:
@@ -96,6 +97,7 @@ your questions. Each question needs to be in the following format:
       correctAnswer: string, equal to one of options,
       hint: string,
       lang: string, preferebly one of [supported languages in chroma lib](https://github.com/alecthomas/chroma?tab=readme-ov-file#supported-languages) for code highlighthing
+```
 
 ## To-Do
 
