@@ -41,8 +41,8 @@ func (k ExplanationKeyMap) FullHelp() [][]key.Binding {
 
 var ExplanationKeys = ExplanationKeyMap{
 	Next: key.NewBinding(
-		key.WithKeys("enter", "space"),
-		key.WithHelp("enter/space", "next challenge"),
+		key.WithKeys("enter", "n"),
+		key.WithHelp("enter/n", "next challenge"),
 	),
 	Back: key.NewBinding(
 		key.WithKeys("esc", "backspace"),
@@ -68,6 +68,7 @@ type ExplanationView struct {
 	sourceMenu       MenuType
 	help             help.Model
 	showHelp         bool
+	isFromCompletion bool
 }
 
 var (
@@ -78,9 +79,9 @@ var (
 	completedStyle            = lipgloss.NewStyle().Foreground(lipgloss.Color("#5FFF87")).Bold(true)
 )
 
-// NewExplanationView creates a new explanation view
-func NewExplanationView(gs *game.GameState, challenge challenges.Challenge, width, height int, sourceMenu MenuType) *ExplanationView {
-	explanation, found := gs.GetVulnerabilityExplanation(challenge)
+// vulnerability explanation view
+func NewExplanationView(gs *game.GameState, challenge challenges.Challenge, width, height int, sourceMenu MenuType, isFromCompletion bool) *ExplanationView {
+	explanation, found := gs.GetVulnerabilityExplanation(challenge.Category)
 
 	return &ExplanationView{
 		gameState:        gs,
@@ -92,6 +93,7 @@ func NewExplanationView(gs *game.GameState, challenge challenges.Challenge, widt
 		sourceMenu:       sourceMenu,
 		help:             help.New(),
 		showHelp:         false,
+		isFromCompletion: isFromCompletion,
 	}
 }
 
@@ -99,7 +101,7 @@ func (v *ExplanationView) Init() tea.Cmd {
 	return nil
 }
 
-// Update handles messages and user input
+// handles messages and user input
 func (v *ExplanationView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
@@ -112,13 +114,42 @@ func (v *ExplanationView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return v, nil
 
 		case key.Matches(msg, ExplanationKeys.Next):
-			// Continue to next challenge
-			return v, func() tea.Msg {
-				return nextChallengeMsg{}
+			if v.isFromCompletion {
+				// Go to next challenge if this was shown after completing a challenge
+				return v, func() tea.Msg {
+					return nextChallengeMsg{}
+				}
+			} else {
+				// If viewing from category menu, go back to category view
+				for i, set := range v.gameState.ChallengeSets {
+					if set.Category == v.challenge.Category {
+						return NewChallengeMenu(v.gameState, i, v.width, v.height, v.sourceMenu), nil
+					}
+				}
+			}
+
+			// If we came from the challenge menu, go back to that menu
+			if v.sourceMenu == ChallengeMenu {
+				// Find the category index
+				for i, set := range v.gameState.ChallengeSets {
+					if set.Category == v.challenge.Category {
+						return NewChallengeMenu(v.gameState, i, v.width, v.height, v.sourceMenu), nil
+					}
+				}
 			}
 
 		case key.Matches(msg, ExplanationKeys.Back):
-			// Go back to menu
+			// If we came from the challenge menu, go back to that menu
+			if v.sourceMenu == ChallengeMenu {
+				// Find the category index
+				for i, set := range v.gameState.ChallengeSets {
+					if set.Category == v.challenge.Category {
+						return NewChallengeMenu(v.gameState, i, v.width, v.height, v.sourceMenu), nil
+					}
+				}
+			}
+
+			// Otherwise, return to main menu
 			return v, func() tea.Msg {
 				return backToMenuMsg{}
 			}
@@ -132,15 +163,16 @@ func (v *ExplanationView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return v, nil
 }
 
-// View renders the explanation
+// renders vulnerability explanation
 func (v *ExplanationView) View() string {
 	var b strings.Builder
 
-	// Title
-	b.WriteString(completedStyle.Render("🎉 Challenge Completed!") + "\n\n")
-
-	// Challenge info
-	b.WriteString(fmt.Sprintf("You've completed: %s\n\n", selectedItemStyle.Render(v.challenge.Title)))
+	if v.isFromCompletion {
+		b.WriteString(completedStyle.Render("🎉 Challenge Completed!") + "\n\n")
+		b.WriteString(fmt.Sprintf("You've completed: %s\n\n", selectedItemStyle.Render(v.challenge.Title)))
+	} else {
+		b.WriteString(explanationHighlightStyle.Render("Vulnerability Explanation") + "\n\n")
+	}
 
 	// Vulnerability name and category
 	b.WriteString(fmt.Sprintf("Vulnerability Category: %s\n\n", explanationHighlightStyle.Render(v.challenge.Category)))
@@ -174,9 +206,10 @@ func (v *ExplanationView) View() string {
 	// Navigation help
 	if v.showHelp {
 		b.WriteString("\n" + v.help.View(ExplanationKeys))
+	} else if v.isFromCompletion {
+		b.WriteString("\n" + helpHintStyle.Render("Press 'Enter'/'N' to continue to next challenge"))
+		b.WriteString("\n" + helpHintStyle.Render("Press ? for help"))
 	} else {
-		b.WriteString("\n" + helpHintStyle.Render("Press Enter to continue to next challenge"))
-		b.WriteString("\n" + helpHintStyle.Render("Press Esc to return to menu"))
 		b.WriteString("\n" + helpHintStyle.Render("Press ? for help"))
 	}
 

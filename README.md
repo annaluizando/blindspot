@@ -28,25 +28,67 @@ secure-code-game/
 ├── go.mod # Go module file
 └── go.sum # Go dependencies
 
-# Secure Code Game!
+# 🛡️ Secure Code Game !
 
-This is a cli game to promote a pratical and fun learning of secure code practices based on OWASP Top 10. :)
-Feel free to analyze, play, modify, I'm accepting new ideas and collaboration!
+A CLI-based interactive game designed to train yourself to identify insecure coding practices based on the OWASP Top 10, in a practical and fun way!
 
-## Stack
+Feel free to play, analyze, modify, and contribute. New ideas and collaborations are always welcome :)
 
-- Go
-- BubbleTea (TUI)
+## 🔧 Stack
 
-## To-do:
+- **Golang** - Core language
+- [**BubbleTea**](https://github.com/charmbracelet/bubbletea) - Terminal UI framework
 
-- [x] Syntax highlight
-- [x] Add more challenges/vulnerabilities
-- [ ] Add section 2, for pratical exercises
-- [ ] toggle text color from white to black depending on user's terminal color
-- [x] add explanation from vulnerability in the beginning/ending of each category
-- [x] "Settings" should be removed, probably
-- [x] "Progress" tab not working, want to work and show how % of progress in each category user has
-- [ ] the next exercise should be in the same level (beginner, intermediate).
-- [x] revive "Settings" so user can choose if they want vulnerability name in top of file or not.
-- [ ] user should be able to skip challenge using 'n' to next challenge
+## ✨ Features
+
+The following features can be accessed in the "Settings" section, allowing players to customize their learning experience:
+
+### 🔍 Vulnerability Name Display Toggle
+
+It's possible to change visibility of vulnerability names to adjust if those names should appear or not in the top of challenges.
+Hiding names creates a more challenging experience where you must identify vulnerabilities completely on your own.
+
+### 🔄 Challenge Order
+
+Two playing modes are available:
+
+- **Random by Difficulty** - A more "advanced" way of playing, where vulnerabilities appear grouped by difficulty level, progressing from beginner to advanced. If you want the "hardest" way of playing, combine this with Vulnerability names: Hide.
+- **Category Order** - A more directed way to train your eye for specific vulnerability category, as vulnerabilities appear grouped by their category.
+
+## 📝 Progress Tracking
+
+Track your learning journey through each vulnerability category wit completion percentages for each category that can be seen in "Categories" and/or "Progress".
+
+## ⌨️ Controls
+
+- Use arrow keys to navigate
+- Press `Enter` to select
+- Press `n` or `Enter` to go to next challenge
+- Press `q` to quit at any time
+
+## To-Do
+
+### Completed
+
+- [x] Implement syntax highlighting
+- [x] Add more challenges and vulnerabilities
+- [x] Add explanations for each vulnerability category
+- [x] Fix "Progress" tab functionality
+- [x] Implement both random and category-based game modes
+- [x] Restore "Settings" section with customization options
+- [x] Add ability to skip challenges
+- [x] Include vulnerability explanations in category sections
+- [x] Fix some texts line break (menu screen)
+
+### In Progress
+
+- [ ] Add Section 2 for practical exercises
+- [ ] Implement adaptive text color based on terminal theme
+- [ ] Fix and improve help text clarity
+- [ ] Complete manual review of all challenges
+- [ ] Correct vuln explanation to go back to its origin and not main menu when user presses back key
+- [ ] Add Congratulation screen when finishing all challenges
+
+## 📜 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

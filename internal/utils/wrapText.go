@@ -7,21 +7,15 @@ func WrapText(text string, width int) string {
 		return text
 	}
 
-	// Leave some margin
-	width = width - 4
-	if width <= 0 {
-		width = 10 // Minimum reasonable width
-	}
+	width = width - 4 // leaving some margin
 
 	var result strings.Builder
 	lines := strings.Split(text, "\n")
 
 	for i, line := range lines {
-		if len(line) <= width {
-			// Line fits, add it as is
+		if len(line) <= width { // line fits
 			result.WriteString(line)
-		} else {
-			// Line needs wrapping
+		} else { // line need wrapping
 			words := strings.Fields(line)
 			if len(words) == 0 {
 				continue

@@ -1,6 +1,6 @@
 challengeSets:
   - category: "A01:2021 – Broken Access Control"
-    description: "Access control enforces policies such that users cannot act outside of their intended permissions. Failures typically lead to unauthorized disclosure, modification, or destruction of data."
+    description: "Access control enforces policies such that users cannot act outside of their intended permissions.\nFailures typically lead to unauthorized disclosure, modification, or destruction of data."
     challenges:
       - id: "broken-access-control-1"
         title: "Insecure Direct Object Reference"
@@ -297,7 +297,7 @@ challengeSets:
           - "intermediate"
 
   - category: "A05:2021 – Security Misconfiguration"
-    description: "Security misconfiguration is commonly a result of insecure default configurations, incomplete or ad hoc configurations, open cloud storage, or error messages containing sensitive information."
+    description: "Security misconfiguration is commonly a result of insecure default configurations."
     challenges:
       - id: "security-misconfig-1"
         title: "Verbose Error Messages"

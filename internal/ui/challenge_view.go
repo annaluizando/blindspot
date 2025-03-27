@@ -70,8 +70,9 @@ var keys = keyMap{
 		key.WithHelp("h", "show hint"),
 	),
 	Next: key.NewBinding(
-		key.WithKeys("n"),
+		key.WithKeys("n", "enter"),
 		key.WithHelp("n", "next challenge"),
+		key.WithHelp("enter", "next challenge"),
 	),
 }
 
@@ -124,10 +125,10 @@ func (m *ChallengeView) Init() tea.Cmd {
 func (m *ChallengeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		// If we've already answered correctly and user presses "n", go to next challenge
+		// If we've already answered correctly and goes to next challenge
 		if m.hasAnswered && m.isCorrect && key.Matches(msg, keys.Next) {
-			// Instead of immediately going to next challenge, show explanation first
-			explanationView := NewExplanationView(m.gameState, m.challenge, m.width, m.height, m.sourceMenu)
+			// Show category explanation before going to next challenge
+			explanationView := NewExplanationView(m.gameState, m.challenge, m.width, m.height, m.sourceMenu, true)
 			return explanationView, explanationView.Init()
 		}
 
@@ -142,11 +143,9 @@ func (m *ChallengeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case key.Matches(msg, keys.Help):
-			// Toggle help view
 			m.helpModel.ShowAll = !m.helpModel.ShowAll
 
 		case key.Matches(msg, keys.ShowHint):
-			// Toggle hint
 			m.showHint = !m.showHint
 
 		case key.Matches(msg, keys.Up):
@@ -183,9 +182,11 @@ func (m *ChallengeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				// Mark challenge as completed
 				m.gameState.MarkChallengeCompleted(m.challenge.ID)
 
-				// Show explanation view immediately after marking correct
-				explanationView := NewExplanationView(m.gameState, m.challenge, m.width, m.height, m.sourceMenu)
-				return explanationView, explanationView.Init()
+				if m.gameState.ShouldShowVulnerabilityExplanation(m.challenge.Category) {
+					// Show explanation view immediately after marking correct if not in random mode
+					explanationView := NewExplanationView(m.gameState, m.challenge, m.width, m.height, m.sourceMenu, true)
+					return explanationView, explanationView.Init()
+				}
 			} else {
 				m.isCorrect = false
 				m.result = "✗ Incorrect. Try another option by moving arrow keys!"
@@ -299,7 +300,7 @@ func (m *ChallengeView) View() string {
 
 		// Show "next challenge" prompt if the answer is correct
 		if m.isCorrect {
-			b.WriteString("\nPress 'n' to proceed to the next challenge\n")
+			b.WriteString("\n" + helpHintStyle.Render("Press 'Enter'/'N' to continue to next challenge"))
 		}
 	}
 
