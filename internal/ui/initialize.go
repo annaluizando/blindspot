@@ -31,12 +31,12 @@ func InitializeUI(gameState *game.GameState) (*tea.Program, error) {
 	return program, nil
 }
 
-// Init initializes the application
+// initializes the application
 func (m AppModel) Init() tea.Cmd {
 	return m.activeView.Init()
 }
 
-// Update handles messages and user input
+// handles messages and user input
 func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
@@ -117,13 +117,10 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.activeView.Init()
 
 	case nextChallengeMsg:
-		// Move to the next challenge
 		if m.gameState.MoveToNextChallenge() {
-			// If there is a next challenge, show it
 			challenge := m.gameState.GetCurrentChallenge()
 			m.activeView = NewChallengeView(m.gameState, challenge, m.width, m.height, MainMenu)
 		} else {
-			// Otherwise, look for next incomplete challenge
 			challenge, found := m.gameState.GetNextIncompleteChallenge()
 			if found {
 				m.activeView = NewChallengeView(m.gameState, challenge, m.width, m.height, MainMenu)
@@ -140,7 +137,7 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-// View renders the application
+// renders the application
 func (m AppModel) View() string {
 	return m.activeView.View()
 }

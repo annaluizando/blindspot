@@ -14,7 +14,6 @@ import (
 	"secure-code-game/internal/utils"
 )
 
-// Define key mappings
 type keyMap struct {
 	Up       key.Binding
 	Down     key.Binding
@@ -24,20 +23,6 @@ type keyMap struct {
 	Quit     key.Binding
 	ShowHint key.Binding
 	Next     key.Binding
-}
-
-// ShortHelp returns keybindings to be shown in the mini help view.
-func (k keyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.Help, k.Quit}
-}
-
-// FullHelp returns keybindings for the expanded help view.
-func (k keyMap) FullHelp() [][]key.Binding {
-	return [][]key.Binding{
-		{k.Up, k.Down, k.Select}, // First column
-		{k.Back, k.Help, k.Quit}, // Second column
-		{k.ShowHint, k.Next},     // Third column
-	}
 }
 
 var keys = keyMap{
@@ -76,7 +61,7 @@ var keys = keyMap{
 	),
 }
 
-// ChallengeView displays a multiple choice vulnerability challenge
+// displays a multiple choice vulnerability challenge
 type ChallengeView struct {
 	gameState   *game.GameState
 	challenge   challenges.Challenge
@@ -312,4 +297,19 @@ func (m *ChallengeView) View() string {
 	b.WriteString("\n" + helpStyle.Render(helpText))
 
 	return b.String()
+}
+
+// --- helpers ---
+// returns keybindings to be shown in the mini help view.
+func (k keyMap) ShortHelp() []key.Binding {
+	return []key.Binding{k.Help, k.Quit}
+}
+
+// FullHelp returns keybindings for the expanded help view.
+func (k keyMap) FullHelp() [][]key.Binding {
+	return [][]key.Binding{
+		{k.Up, k.Down, k.Select}, // First column
+		{k.Back, k.Help, k.Quit}, // Second column
+		{k.ShowHint, k.Next},     // Third column
+	}
 }

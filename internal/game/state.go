@@ -20,7 +20,7 @@ type UserProgress struct {
 
 type UserSettings struct {
 	ShowVulnerabilityNames bool   `json:"showVulnerabilityNames"`
-	ChallengeOrderMode     string `json:"challengeOrderMode"`
+	GameMode               string `json:"gameMode"`
 }
 
 type GameState struct {
@@ -63,7 +63,7 @@ func NewGameState() (*GameState, error) {
 		// If no settings file exists, create a new one with defaults
 		settings = UserSettings{
 			ShowVulnerabilityNames: false,
-			ChallengeOrderMode:     "category",
+			GameMode:               "category",
 		}
 	}
 
@@ -82,7 +82,7 @@ func NewGameState() (*GameState, error) {
 		Settings:                  settings,
 		ConfigDir:                 configDir,
 		VulnerabilityExplanations: vulnExplanations,
-		UseRandomizedOrder:        settings.ChallengeOrderMode == "random-by-difficulty",
+		UseRandomizedOrder:        settings.GameMode == "random-by-difficulty",
 	}
 
 	// Generate or restore the randomized challenges
@@ -112,15 +112,15 @@ func (gs *GameState) ToggleShowVulnerabilityNames() {
 }
 
 // Helper method to toggle challenge order setting
-func (gs *GameState) ToggleChallengeOrderMode() {
-	if gs.Settings.ChallengeOrderMode == "category" {
-		gs.Settings.ChallengeOrderMode = "random-by-difficulty"
+func (gs *GameState) ToggleGameMode() {
+	if gs.Settings.GameMode == "category" {
+		gs.Settings.GameMode = "random-by-difficulty"
 	} else {
-		gs.Settings.ChallengeOrderMode = "category"
+		gs.Settings.GameMode = "category"
 	}
 
 	// Update the UseRandomizedOrder flag to match the setting
-	gs.UseRandomizedOrder = gs.Settings.ChallengeOrderMode == "random-by-difficulty"
+	gs.UseRandomizedOrder = gs.Settings.GameMode == "random-by-difficulty"
 
 	// If we're switching to random mode and don't have randomized challenges yet, generate them
 	if gs.UseRandomizedOrder && len(gs.RandomizedChallenges) == 0 {
@@ -316,7 +316,7 @@ func loadSettings(configDir string) (UserSettings, error) {
 	if err != nil {
 		return UserSettings{
 			ShowVulnerabilityNames: false,      // Default value
-			ChallengeOrderMode:     "category", // Default to category mode
+			GameMode:               "category", // Default to category mode
 		}, err
 	}
 
@@ -325,7 +325,7 @@ func loadSettings(configDir string) (UserSettings, error) {
 	if err != nil {
 		return UserSettings{
 			ShowVulnerabilityNames: false,      // Default value
-			ChallengeOrderMode:     "category", // Default to category mode
+			GameMode:               "category", // Default to category mode
 		}, err
 	}
 
