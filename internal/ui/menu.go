@@ -8,9 +8,9 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 
-	"secure-code-game/internal/challenges"
-	"secure-code-game/internal/game"
-	"secure-code-game/internal/utils"
+	"blindspot/internal/challenges"
+	"blindspot/internal/game"
+	"blindspot/internal/utils"
 )
 
 // represents different types of menus

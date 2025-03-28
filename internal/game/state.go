@@ -1,12 +1,12 @@
 package game
 
 import (
+	"blindspot/internal/challenges"
 	"encoding/json"
 	"fmt"
 	"math/rand"
 	"os"
 	"path/filepath"
-	"secure-code-game/internal/challenges"
 	"time"
 )
 
@@ -366,7 +366,7 @@ func getConfigDir() (string, error) {
 		return "", err
 	}
 
-	configDir := filepath.Join(homeDir, ".secure-code-game")
+	configDir := filepath.Join(homeDir, ".blindspot-game")
 	if err := os.MkdirAll(configDir, 0755); err != nil {
 		return "", err
 	}

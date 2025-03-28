@@ -1,4 +1,4 @@
-module secure-code-game
+module blindspot
 
 go 1.23.1
 

@@ -3,8 +3,8 @@ package main
 import (
 	"log"
 
-	"secure-code-game/internal/game"
-	"secure-code-game/internal/ui"
+	"blindspot/internal/game"
+	"blindspot/internal/ui"
 )
 
 func main() {

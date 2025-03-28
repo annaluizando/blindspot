@@ -1,7 +1,7 @@
 package ui
 
 import (
-	"secure-code-game/internal/game"
+	"blindspot/internal/game"
 
 	tea "github.com/charmbracelet/bubbletea"
 )

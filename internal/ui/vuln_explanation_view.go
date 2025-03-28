@@ -9,9 +9,9 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"secure-code-game/internal/challenges"
-	"secure-code-game/internal/game"
-	"secure-code-game/internal/utils"
+	"blindspot/internal/challenges"
+	"blindspot/internal/game"
+	"blindspot/internal/utils"
 )
 
 // messages used to navigate after showing vulnerability explanation
