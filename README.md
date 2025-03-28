@@ -1,4 +1,4 @@
-# 🔦 blindspot - security code game!
+# 🔦 blindspot - a code security game!
 
 A CLI-based interactive game designed to train yourself to identify insecure coding practices based on the OWASP Top 10, in a practical and fun way!
 
@@ -112,7 +112,6 @@ your questions. Each question needs to be in the following format:
 - [x] Add ability to skip challenges
 - [x] Include vulnerability explanations in category sections
 - [x] Fix some texts line break (menu screen)
-- [x] Resolve bug in game mode toggle
 
 ### In Progress
 
@@ -123,6 +122,8 @@ your questions. Each question needs to be in the following format:
 - [ ] Correct vuln explanation to go back to its origin and not main menu when user presses back key
 - [ ] Add Congratulation screen when finishing all challenges
 - [ ] Add user errors count in each category for statistics
+- [ ] Add command for openning a random challenge with difficulty and category as params
+- [ ] Resolve bug in game mode toggle
 
 ## 📜 License
 
