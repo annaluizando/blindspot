@@ -285,7 +285,37 @@ func (gs *GameState) GetNextIncompleteChallenge() (challenges.Challenge, bool) {
 	return challenges.Challenge{}, false
 }
 
-// Loads user progress from file
+func (gs *GameState) EraseProgressData() {
+	config, err := getConfigDir()
+	if err != nil {
+		return
+	}
+
+	err = os.Remove(config)
+	if err != nil {
+		// to-do: handle error
+		return
+	}
+
+	gs.resetProgress()
+}
+
+func (gs *GameState) resetProgress() {
+	gs.Progress = UserProgress{
+		CompletedChallenges:    make(map[string]bool),
+		CurrentCategoryIdx:     0,
+		CurrentChallengeIdx:    0,
+		RandomizedChallengeIDs: []string{},
+		IsRandomMode:           false,
+	}
+
+	gs.CurrentCategoryIdx = 0
+	gs.CurrentChallengeIdx = 0
+
+	gs.RandomizedChallenges = []challenges.Challenge{}
+	gs.UseRandomizedOrder = false
+}
+
 func loadProgress(configDir string) (UserProgress, error) {
 	progressPath := filepath.Join(configDir, "progress.json")
 

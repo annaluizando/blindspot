@@ -34,20 +34,6 @@ type MenuKeyMap struct {
 	Quit   key.Binding
 }
 
-// reduced help view.
-func (k MenuKeyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.Help, k.Quit}
-}
-
-// expanded help view.
-func (k MenuKeyMap) FullHelp() [][]key.Binding {
-	return [][]key.Binding{
-		{k.Up, k.Down},     // Navigation
-		{k.Select, k.Back}, // Actions
-		{k.Help, k.Quit},
-	}
-}
-
 // holds the key mappings for menus
 var MenuKeys = MenuKeyMap{
 	Up: key.NewBinding(
@@ -169,12 +155,20 @@ func (m *MenuView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.gameState.SaveRandomizedOrder()
 					}
 
-					challenge := m.gameState.GetCurrentChallenge()
+					_, found := m.gameState.GetNextIncompleteChallenge()
+					var challenge challenges.Challenge
 
-					// Go directly to current challenge
-					return m, func() tea.Msg {
-						return SelectChallengeMsg{Challenge: challenge}
+					if found {
+						challenge = m.gameState.GetCurrentChallenge()
+						// Go directly to current challenge
+						return m, func() tea.Msg {
+							return SelectChallengeMsg{Challenge: challenge}
+						}
+					} else {
+						newCompletion := NewCompletionView(m.gameState, m.width, m.height, MainMenu)
+						return newCompletion, nil
 					}
+
 				case 1: // Categories
 					newMenu := NewCategoriesMenu(m.gameState, m.width, m.height, MainMenu)
 					return newMenu, nil
@@ -223,7 +217,6 @@ func (m *MenuView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			} else if m.type_ == SettingsMenu {
 				if m.cursor == 0 { // Vulnerability Names toggle
-					// Toggle the setting
 					m.gameState.ToggleShowVulnerabilityNames()
 
 					// Create a new settings menu to refresh the display
@@ -235,7 +228,12 @@ func (m *MenuView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					// Create a new settings menu to refresh the display
 					newMenu := NewSettingsMenu(m.gameState, m.width, m.height)
 					return newMenu, nil
-				} else if m.cursor == 2 { // Back to Main Menu
+				} else if m.cursor == 2 { // Delete Progress Data
+					m.gameState.EraseProgressData()
+
+					newMenu := NewSettingsMenu(m.gameState, m.width, m.height)
+					return newMenu, nil
+				} else if m.cursor == 3 { // Back to Main Menu
 					newMenu := NewMainMenu(m.gameState, m.width, m.height)
 					return newMenu, nil
 				}
@@ -564,6 +562,12 @@ func NewSettingsMenu(gs *game.GameState, width, height int) *MenuView {
 			ID: "setting-ordermode",
 		},
 		{
+			Title: "Delete progress data",
+			Description: "Erases ALL progress data and begin game from start.\n" +
+				"!!! Be aware this will make you loose ALL your current progress. \n",
+			ID: "setting-deleteprogress",
+		},
+		{
 			Title:       "Back to Main Menu",
 			Description: "Return to the main menu",
 			ID:          "setting-back",
@@ -580,5 +584,18 @@ func NewSettingsMenu(gs *game.GameState, width, height int) *MenuView {
 		height:      height,
 		description: "Configure your game preferences. These settings will be saved for future sessions.",
 		sourceMenu:  MainMenu,
+	}
+}
+
+// ---- helpers ----
+func (k MenuKeyMap) ShortHelp() []key.Binding {
+	return []key.Binding{k.Help, k.Quit}
+}
+
+func (k MenuKeyMap) FullHelp() [][]key.Binding {
+	return [][]key.Binding{
+		{k.Up, k.Down},
+		{k.Select, k.Back},
+		{k.Help, k.Quit},
 	}
 }

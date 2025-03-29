@@ -113,7 +113,7 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if found {
 				m.activeView = NewChallengeView(m.gameState, challenge, m.width, m.height, MainMenu)
 			} else {
-				m.activeView = NewMainMenu(m.gameState, m.width, m.height) // should modify here NewMainMenu for congratulations view when no next challenge is found
+				m.activeView = NewCompletionView(m.gameState, m.width, m.height, MainMenu)
 			}
 		}
 		return m, m.activeView.Init()
