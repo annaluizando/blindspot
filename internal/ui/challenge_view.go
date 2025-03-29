@@ -297,16 +297,14 @@ func (m *ChallengeView) View() string {
 }
 
 // --- helpers ---
-// returns keybindings to be shown in the mini help view.
 func (k keyMap) ShortHelp() []key.Binding {
 	return []key.Binding{k.Help, k.Quit}
 }
 
-// FullHelp returns keybindings for the expanded help view.
 func (k keyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
-		{k.Up, k.Down, k.Select}, // First column
-		{k.Back, k.Help, k.Quit}, // Second column
-		{k.ShowHint, k.Next},     // Third column
+		{k.Up, k.Down, k.Select},
+		{k.Back, k.Help, k.Quit},
+		{k.ShowHint, k.Next},
 	}
 }

@@ -26,17 +26,17 @@ type ExplanationKeyMap struct {
 	Quit key.Binding
 }
 
-// returns keybindings to be shown in reduced help view.
-func (k ExplanationKeyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.Help, k.Quit}
-}
-
-// returns keybindings for expanded help view.
-func (k ExplanationKeyMap) FullHelp() [][]key.Binding {
-	return [][]key.Binding{
-		{k.Next, k.Back}, // Actions
-		{k.Help, k.Quit}, // Global
-	}
+type ExplanationView struct {
+	gameState        *game.GameState
+	challenge        challenges.Challenge
+	explanation      challenges.VulnerabilityInfo
+	explanationFound bool
+	width            int
+	height           int
+	sourceMenu       MenuType
+	help             help.Model
+	showHelp         bool
+	isFromCompletion bool
 }
 
 var ExplanationKeys = ExplanationKeyMap{
@@ -56,19 +56,6 @@ var ExplanationKeys = ExplanationKeyMap{
 		key.WithKeys("ctrl+c", "q"),
 		key.WithHelp("ctrl+c/q", "quit"),
 	),
-}
-
-type ExplanationView struct {
-	gameState        *game.GameState
-	challenge        challenges.Challenge
-	explanation      challenges.VulnerabilityInfo
-	explanationFound bool
-	width            int
-	height           int
-	sourceMenu       MenuType
-	help             help.Model
-	showHelp         bool
-	isFromCompletion bool
 }
 
 var (
@@ -174,17 +161,14 @@ func (v *ExplanationView) View() string {
 	b.WriteString(fmt.Sprintf("Vulnerability Category: %s\n\n", explanationHighlightStyle.Render(v.challenge.Category)))
 
 	if v.explanationFound {
-		// Short description
 		b.WriteString(explanationSubtitleStyle.Render("What is this vulnerability?") + "\n")
 		wrappedDesc := utils.WrapText(v.explanation.ShortDescription, v.width)
 		b.WriteString(descriptionStyle.Render(wrappedDesc) + "\n\n")
 
-		// Full explanation
 		b.WriteString(explanationSubtitleStyle.Render("Learn More:") + "\n")
 		wrappedExplanation := utils.WrapText(v.explanation.Explanation, v.width)
 		b.WriteString(explanationTextStyle.Render(wrappedExplanation) + "\n\n")
 
-		// Resources
 		if len(v.explanation.Resources) > 0 {
 			b.WriteString(explanationSubtitleStyle.Render("Additional Resources:") + "\n")
 			for _, resource := range v.explanation.Resources {
@@ -198,7 +182,6 @@ func (v *ExplanationView) View() string {
 		b.WriteString(errorStyle.Render("Detailed explanation for this vulnerability category is not available yet.") + "\n\n")
 	}
 
-	// Navigation help
 	if v.showHelp {
 		b.WriteString("\n" + v.help.View(ExplanationKeys))
 	} else if v.isFromCompletion {
@@ -209,4 +192,16 @@ func (v *ExplanationView) View() string {
 	}
 
 	return b.String()
+}
+
+// ---- helpers ----
+func (k ExplanationKeyMap) ShortHelp() []key.Binding {
+	return []key.Binding{k.Help, k.Quit}
+}
+
+func (k ExplanationKeyMap) FullHelp() [][]key.Binding {
+	return [][]key.Binding{
+		{k.Next, k.Back},
+		{k.Help, k.Quit},
+	}
 }

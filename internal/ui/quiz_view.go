@@ -9,7 +9,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// QuizKeyMap defines keybindings for quizzes
 type QuizKeyMap struct {
 	Up     key.Binding
 	Down   key.Binding
@@ -20,21 +19,6 @@ type QuizKeyMap struct {
 	Quit   key.Binding
 }
 
-// ShortHelp returns keybindings to be shown in the mini help view.
-func (k QuizKeyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.Help, k.Quit}
-}
-
-// FullHelp returns keybindings for the expanded help view.
-func (k QuizKeyMap) FullHelp() [][]key.Binding {
-	return [][]key.Binding{
-		{k.Up, k.Down, k.Select}, // Navigation
-		{k.Back, k.Hint, k.Help}, // Actions
-		{k.Quit},                 // System
-	}
-}
-
-// QuizKeys holds the quiz key mappings
 var QuizKeys = QuizKeyMap{
 	Up: key.NewBinding(
 		key.WithKeys("up", "k"),
@@ -66,38 +50,34 @@ var QuizKeys = QuizKeyMap{
 	),
 }
 
-// QuizOption represents a single quiz option
 type QuizOption struct {
 	Text string
 	ID   int
 }
 
-// QuizAnswerMsg is sent when an answer is selected
 type QuizAnswerMsg struct {
 	SelectedID int
 	Correct    bool
 }
 
-// QuizView is the multiple-choice quiz component
 type QuizView struct {
-	question     string
-	options      []QuizOption
-	correctID    int
-	cursor       int
-	selected     bool
-	showHint     bool
-	hint         string
-	help         help.Model
-	showHelp     bool
-	result       string
-	resultStyle  lipgloss.Style
-	width        int
-	height       int
-	explanation  string
-	hasAnswered  bool
+	question    string
+	options     []QuizOption
+	correctID   int
+	cursor      int
+	selected    bool
+	showHint    bool
+	hint        string
+	help        help.Model
+	showHelp    bool
+	result      string
+	resultStyle lipgloss.Style
+	width       int
+	height      int
+	explanation string
+	hasAnswered bool
 }
 
-// NewQuizView creates a new quiz view
 func NewQuizView(question string, options []string, correctID int, hint string, width, height int) *QuizView {
 	quizOptions := make([]QuizOption, len(options))
 	for i, opt := range options {
@@ -120,12 +100,12 @@ func NewQuizView(question string, options []string, correctID int, hint string, 
 	}
 }
 
-// Init initializes the quiz view
+// initializes the quiz view
 func (q *QuizView) Init() tea.Cmd {
 	return nil
 }
 
-// Update handles messages and user input
+// handles messages and user input
 func (q *QuizView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
@@ -185,7 +165,7 @@ func (q *QuizView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return q, nil
 }
 
-// View renders the quiz view
+// renders the quiz view
 func (q *QuizView) View() string {
 	var b strings.Builder
 
@@ -225,22 +205,18 @@ func (q *QuizView) View() string {
 		b.WriteString(renderedOption + "\n")
 	}
 
-	// Hint
 	if q.showHint {
-		b.WriteString("\n" + hintStyle.Render("Hint: " + q.hint) + "\n")
+		b.WriteString("\n" + hintStyle.Render("Hint: "+q.hint) + "\n")
 	}
 
-	// Result
 	if q.result != "" {
 		b.WriteString("\n" + q.resultStyle.Render(q.result) + "\n")
 	}
 
-	// Explanation (shown after answering)
 	if q.hasAnswered && q.explanation != "" {
-		b.WriteString("\n" + descStyle.Render("Explanation: " + q.explanation) + "\n")
+		b.WriteString("\n" + descStyle.Render("Explanation: "+q.explanation) + "\n")
 	}
 
-	// Help
 	helpText := ""
 	if q.showHelp {
 		helpText = q.help.View(QuizKeys)
@@ -252,12 +228,25 @@ func (q *QuizView) View() string {
 	return b.String()
 }
 
-// IsCorrect returns whether the selected answer is correct
+// verify if selected answer is correct
 func (q *QuizView) IsCorrect() bool {
 	return q.hasAnswered && q.cursor == q.correctID
 }
 
-// SetExplanation sets an explanation text to show after answering
+// sets an explanation text to show after answering
 func (q *QuizView) SetExplanation(explanation string) {
 	q.explanation = explanation
+}
+
+// ---- helpers ----
+func (k QuizKeyMap) ShortHelp() []key.Binding {
+	return []key.Binding{k.Help, k.Quit}
+}
+
+func (k QuizKeyMap) FullHelp() [][]key.Binding {
+	return [][]key.Binding{
+		{k.Up, k.Down, k.Select},
+		{k.Back, k.Hint, k.Help},
+		{k.Quit},
+	}
 }
