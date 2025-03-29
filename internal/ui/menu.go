@@ -302,9 +302,28 @@ func NewMainMenu(gs *game.GameState, width, height int) *MenuView {
 		{Title: "Exit", Description: "Save and exit the game"},
 	}
 
+	ascii := `
+	 	╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮
+	    │                                               │
+	    │                                               │
+	    │                                               │
+	    │       █▄▄ █   █ █▄ █ █▀▄ █▀ █▀█ █▀█ ▀█▀       │
+	    │       █▄█ █▄▄ █ █ ▀█ █▄▀ ▄█ █▀▀ █▄█  █        │
+	    │                                               │
+	    │                                               │
+	    │                                               │
+	    ╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯
+
+	             ✧ find insecure code practices ✧
+	         ✧ level up your code security training ✧
+			 
+
+	・．．・゜゜・．．・゜゜・．．・゜゜・．．・゜゜・．．・゜゜
+	 	`
+
 	return &MenuView{
 		type_:       MainMenu,
-		title:       "Security Code Game",
+		title:       ascii,
 		items:       items,
 		gameState:   gs,
 		help:        help.New(),

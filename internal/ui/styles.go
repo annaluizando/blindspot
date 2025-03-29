@@ -31,7 +31,6 @@ var (
 var titleStyle = lipgloss.NewStyle().
 	Foreground(primaryColor).
 	Bold(true).
-	BorderStyle(lipgloss.RoundedBorder()).
 	BorderForeground(secondaryColor).
 	Padding(0, 1).
 	MarginBottom(1)
