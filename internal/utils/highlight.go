@@ -29,7 +29,7 @@ func HighlightCode(code string, language string) string {
 		}
 	}
 
-	style := styles.Get("lovelace")
+	style := styles.Get("monokai")
 	if style == nil {
 		style = styles.Fallback
 	}
