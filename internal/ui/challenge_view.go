@@ -171,12 +171,6 @@ func (m *ChallengeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.result = "✓ Correct! You've identified the vulnerability."
 				m.resultStyle = successStyle
 				m.gameState.MarkChallengeCompleted(m.challenge.ID)
-
-				if m.gameState.ShouldShowVulnerabilityExplanation(currentCategory) {
-					// Show explanation view immediately after marking correct if not in random mode
-					explanationView := NewExplanationView(m.gameState, m.challenge, m.width, m.height, m.sourceMenu, true)
-					return explanationView, explanationView.Init()
-				}
 			} else {
 				m.isCorrect = false
 				m.result = "✗ Incorrect. Try another option by moving arrow keys!"
@@ -235,9 +229,9 @@ func (m *ChallengeView) View() string {
 
 	// Apply syntax highlighting to the code
 	highlightedCode := utils.HighlightCode(m.challenge.Code, language)
+	wrappedCode := utils.WrapText(highlightedCode, m.width)
 
-	// b.WriteString("Vulnerable Code:\n")
-	b.WriteString(codeBoxStyle.Render(highlightedCode) + "\n\n")
+	b.WriteString(codeBoxStyle.Render(wrappedCode) + "\n\n")
 
 	b.WriteString(descStyle.Render("What vulnerability is in this code?") + "\n\n")
 
