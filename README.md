@@ -1,6 +1,6 @@
 # 🔦 blindspot - a code security game!
 
-A terminal interactive game with CLI support designed to train yourself to identify insecure coding practices based on the OWASP Top 10, in a practical and fun way!
+A terminal interactive game designed to train yourself to identify insecure coding practices based on the OWASP Top 10, in a practical and fun way!
 
 Feel free to play, analyze, modify, and contribute. New ideas and collaborations are always welcome :)
 
@@ -124,7 +124,6 @@ your questions. Each question needs to be in the following format:
 
 - [ ] Implement adaptive text color based on terminal theme
 - [ ] Fix and improve help text clarity
-- [ ] Add command for openning a random challenge with difficulty and category as params
 - [ ] Resolve bug in game mode toggle
 - [ ] Add scroll when height is too big for terminal view
 - [ ] Look for better code highlighting theme
