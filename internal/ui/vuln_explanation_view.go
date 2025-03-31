@@ -68,7 +68,7 @@ var (
 
 // vulnerability explanation view
 func NewExplanationView(gs *game.GameState, challenge challenges.Challenge, width, height int, sourceMenu MenuType, isFromCompletion bool) *ExplanationView {
-	explanation, found := gs.GetVulnerabilityExplanation(challenge.Category)
+	explanation, found := gs.GetVulnerabilityExplanation(gs.GetCurrentCategory())
 
 	return &ExplanationView{
 		gameState:        gs,
@@ -108,7 +108,7 @@ func (v *ExplanationView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 				// If viewing from category menu, go back to category view
 				for i, set := range v.gameState.ChallengeSets {
-					if set.Category == v.challenge.Category {
+					if set.Category == v.gameState.GetCurrentCategory() {
 						return NewCategoryMenu(v.gameState, i, v.width, v.height, v.sourceMenu), nil
 					}
 				}
@@ -117,7 +117,7 @@ func (v *ExplanationView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if v.sourceMenu == ChallengeMenu {
 				// Find the category index
 				for i, set := range v.gameState.ChallengeSets {
-					if set.Category == v.challenge.Category {
+					if set.Category == v.gameState.GetCurrentCategory() {
 						return NewCategoryMenu(v.gameState, i, v.width, v.height, v.sourceMenu), nil
 					}
 				}
@@ -127,7 +127,7 @@ func (v *ExplanationView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if v.sourceMenu == ChallengeMenu {
 				// Find the category index
 				for i, set := range v.gameState.ChallengeSets {
-					if set.Category == v.challenge.Category {
+					if set.Category == v.gameState.GetCurrentCategory() {
 						return NewCategoryMenu(v.gameState, i, v.width, v.height, v.sourceMenu), nil
 					}
 				}
@@ -155,10 +155,10 @@ func (v *ExplanationView) View() string {
 		b.WriteString(completedStyle.Render("🎉 Challenge Completed!") + "\n\n")
 		b.WriteString(fmt.Sprintf("You've completed: %s\n\n", selectedItemStyle.Render(v.challenge.Title)))
 	} else {
-		b.WriteString(explanationHighlightStyle.Render("Vulnerability Explanation") + "\n\n")
+		b.WriteString(explanationHighlightStyle.Render("Category Explanation") + "\n\n")
 	}
 
-	b.WriteString(fmt.Sprintf("Vulnerability Category: %s\n\n", explanationHighlightStyle.Render(v.challenge.Category)))
+	b.WriteString(fmt.Sprintf("%s\n\n", explanationHighlightStyle.Render(v.gameState.GetCurrentCategory())))
 
 	if v.explanationFound {
 		b.WriteString(explanationSubtitleStyle.Render("What is this vulnerability?") + "\n")

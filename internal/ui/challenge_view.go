@@ -110,11 +110,21 @@ func (m *ChallengeView) Init() tea.Cmd {
 func (m *ChallengeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		// If we've already answered correctly and goes to next challenge
-		if m.hasAnswered && m.isCorrect && key.Matches(msg, keys.Next) {
-			// Show category explanation before going to next challenge
+		// if challenge is answered correctly, completion of category is 100%
+		// and user goes to next challenge, category explanation is shown
+		if m.hasAnswered &&
+			m.isCorrect &&
+			key.Matches(msg, keys.Next) &&
+			m.gameState.ShouldShowVulnerabilityExplanation(m.gameState.GetCurrentCategory()) {
 			explanationView := NewExplanationView(m.gameState, m.challenge, m.width, m.height, m.sourceMenu, true)
 			return explanationView, explanationView.Init()
+		} else if m.hasAnswered &&
+			m.isCorrect &&
+			key.Matches(msg, keys.Next) &&
+			m.gameState.MoveToNextChallenge() {
+			challenge := m.gameState.GetCurrentChallenge()
+			challengeView := NewChallengeView(m.gameState, challenge, m.width, m.height, MainMenu)
+			return challengeView, challengeView.Init()
 		}
 
 		switch {
@@ -122,7 +132,6 @@ func (m *ChallengeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		case key.Matches(msg, keys.Back):
-			// Return to menu
 			return m, func() tea.Msg {
 				return backToMenuMsg{}
 			}
@@ -134,7 +143,6 @@ func (m *ChallengeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.showHint = !m.showHint
 
 		case key.Matches(msg, keys.Up):
-			// Can navigate up/down even after a wrong answer
 			if m.cursor > 0 && (!m.hasAnswered || !m.isCorrect) {
 				m.cursor--
 				// Reset the result message for another try
@@ -145,7 +153,6 @@ func (m *ChallengeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case key.Matches(msg, keys.Down):
-			// Can navigate up/down even after a wrong answer
 			if m.cursor < len(m.challenge.Options)-1 && (!m.hasAnswered || !m.isCorrect) {
 				m.cursor++
 				// Reset the result message for another try
@@ -156,18 +163,16 @@ func (m *ChallengeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case key.Matches(msg, keys.Select):
-			// Check if the answer is correct
-			selectedOption := m.challenge.Options[m.cursor]
 			m.hasAnswered = true
+			selectedOption := m.challenge.Options[m.cursor]
+			currentCategory := m.gameState.GetCurrentCategory()
 			if selectedOption == m.challenge.CorrectAnswer {
 				m.isCorrect = true
 				m.result = "✓ Correct! You've identified the vulnerability."
 				m.resultStyle = successStyle
-
-				// Mark challenge as completed
 				m.gameState.MarkChallengeCompleted(m.challenge.ID)
 
-				if m.gameState.ShouldShowVulnerabilityExplanation(m.challenge.Category) {
+				if m.gameState.ShouldShowVulnerabilityExplanation(currentCategory) {
 					// Show explanation view immediately after marking correct if not in random mode
 					explanationView := NewExplanationView(m.gameState, m.challenge, m.width, m.height, m.sourceMenu, true)
 					return explanationView, explanationView.Init()
@@ -176,6 +181,7 @@ func (m *ChallengeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.isCorrect = false
 				m.result = "✗ Incorrect. Try another option by moving arrow keys!"
 				m.resultStyle = errorStyle
+				m.gameState.AddErrorCount(currentCategory)
 			}
 		}
 
@@ -210,7 +216,7 @@ func (m *ChallengeView) View() string {
 		b.WriteString(subtitleStyle.Render("CHALLENGE NAME:") + "\n")
 		b.WriteString(titleStyle.Render(m.challenge.Title) + "\n")
 
-		categoryHeader := fmt.Sprintf("VULNERABILITY TYPE: %s", m.challenge.Category)
+		categoryHeader := fmt.Sprintf(" CATEGORY: %s", m.gameState.GetCurrentCategory())
 		b.WriteString(categoryStyle.Render(categoryHeader) + "\n\n")
 	}
 

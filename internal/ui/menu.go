@@ -463,11 +463,10 @@ func NewProgressMenu(gs *game.GameState, width, height int) *MenuView {
 			}
 		}
 
-		// Build a detailed description with completion information
 		description := fmt.Sprintf("%d of %d challenges completed (%d%%)\n",
 			categoryCompleted, len(set.Challenges), completed)
 
-		// Add difficulty distribution information
+		hasDifficultyBreakdown := false
 		beginnerCount, intermediateCount, advancedCount := 0, 0, 0
 		beginnerCompleted, intermediateCompleted, advancedCompleted := 0, 0, 0
 
@@ -475,34 +474,75 @@ func NewProgressMenu(gs *game.GameState, width, height int) *MenuView {
 			switch challenge.Difficulty {
 			case challenges.Beginner:
 				beginnerCount++
+				hasDifficultyBreakdown = true
 				if gs.IsChallengeCompleted(challenge.ID) {
 					beginnerCompleted++
 				}
 			case challenges.Intermediate:
 				intermediateCount++
+				hasDifficultyBreakdown = true
 				if gs.IsChallengeCompleted(challenge.ID) {
 					intermediateCompleted++
 				}
 			case challenges.Advanced:
 				advancedCount++
+				hasDifficultyBreakdown = true
 				if gs.IsChallengeCompleted(challenge.ID) {
 					advancedCompleted++
 				}
 			}
 		}
 
-		// Add difficulty breakdown to description
-		if beginnerCount > 0 {
-			description += fmt.Sprintf("Beginner: %d/%d completed\n",
-				beginnerCompleted, beginnerCount)
+		if hasDifficultyBreakdown {
+			description += "By Difficulty:\n"
+
+			if beginnerCount > 0 {
+				description += fmt.Sprintf("    Beginner: %d/%d completed\n",
+					beginnerCompleted, beginnerCount)
+			}
+			if intermediateCount > 0 {
+				description += fmt.Sprintf("    Intermediate: %d/%d completed\n",
+					intermediateCompleted, intermediateCount)
+			}
+			if advancedCount > 0 {
+				description += fmt.Sprintf("    Advanced: %d/%d completed\n",
+					advancedCompleted, advancedCount)
+			}
 		}
-		if intermediateCount > 0 {
-			description += fmt.Sprintf("Intermediate: %d/%d completed\n",
-				intermediateCompleted, intermediateCount)
+
+		// category error statistics
+		categoryErrorCount := 0
+		if gs.Progress.CategoryErrorCounts != nil {
+			categoryErrorCount = gs.Progress.CategoryErrorCounts[set.Category]
 		}
-		if advancedCount > 0 {
-			description += fmt.Sprintf("Advanced: %d/%d completed\n",
-				advancedCompleted, advancedCount)
+
+		if categoryErrorCount > 0 {
+			errorRate := 0
+			totalAttempts := categoryCompleted + categoryErrorCount
+			if totalAttempts > 0 {
+				errorRate = (categoryErrorCount * 100) / totalAttempts
+			}
+
+			var errorLevel string
+			if errorRate > 50 {
+				errorLevel = "High"
+			} else if errorRate > 30 {
+				errorLevel = "Moderate"
+			} else if errorRate > 15 {
+				errorLevel = "Low"
+			} else {
+				errorLevel = ""
+			}
+
+			if errorLevel != "" {
+				description += fmt.Sprintf("Errors in category: %d (%s - %d%% error rate)\n",
+					categoryErrorCount, errorLevel, errorRate)
+			} else {
+				description += fmt.Sprintf("Errors in category: %d (%d%% error rate)\n",
+					categoryErrorCount, errorRate)
+			}
+		} else if categoryCompleted > 0 {
+			description += "No errors in this category. Great job!\n"
 		}
 
 		items[i] = MenuItem{

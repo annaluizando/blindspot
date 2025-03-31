@@ -1,13 +1,12 @@
 challengeSets:
-  - category: "A01:2021 – Broken Access Control"
+  - category: "Broken Access Control"
+    id: "broken-access-control"
     description: "Access control enforces policies such that users cannot act outside of their intended permissions.\nFailures typically lead to unauthorized disclosure, modification, or destruction of data."
     challenges:
       - id: "broken-access-control-1"
         title: "Insecure Direct Object Reference"
         description: "This API endpoint has a security vulnerability. What is it?"
-        type: 0 # MultipleChoice
         difficulty: 0 # Beginner
-        category: "Broken Access Control"
         code: |
           func GetUserDocument(w http.ResponseWriter, r *http.Request) {
               // Get document ID from URL
@@ -35,9 +34,7 @@ challengeSets:
       - id: "broken-access-control-2"
         title: "Missing Function Level Access Control"
         description: "This admin panel endpoint contains a vulnerability. Can you spot it?"
-        type: 0 # MultipleChoice
         difficulty: 1 # Intermediate
-        category: "Broken Access Control"
         code: |
           // Admin panel router setup
           func SetupAdminRoutes(router *mux.Router) {
@@ -60,15 +57,14 @@ challengeSets:
         hint: "How does the application verify that only administrators can access these endpoints?"
         lang: "Go"
 
-  - category: "A02:2021 – Cryptographic Failures"
+  - category: "Cryptographic Failures"
+    id: "cryptographic-failures"
     description: "Failures related to cryptography that often lead to sensitive data exposure or system compromise."
     challenges:
       - id: "crypto-1"
         title: "Insecure Password Storage"
         description: "What's wrong with this password handling code?"
-        type: 0 # MultipleChoice
         difficulty: 0 # Beginner
-        category: "Cryptographic Failures"
         code: |
           func registerUser(username, password string) error {
               // Hash the password with MD5
@@ -94,9 +90,7 @@ challengeSets:
       - id: "crypto-2"
         title: "Hardcoded Encryption Key"
         description: "This encryption function has a serious security issue. What is it?"
-        type: 0 # MultipleChoice
         difficulty: 1 # Intermediate
-        category: "Cryptographic Failures"
         code: |
           func encryptData(data []byte) ([]byte, error) {
               // AES encryption key (16 bytes)
@@ -131,15 +125,14 @@ challengeSets:
         hint: "Where is the encryption key stored and how is it managed?"
         lang: "Go"
 
-  - category: "A03:2021 – Injection"
+  - category: "Injection"
+    id: "injection"
     description: "Injection flaws occur when untrusted data is sent to an interpreter as part of a command or query."
     challenges:
       - id: "sql-injection-basic"
         title: "Basic SQL Injection"
         description: "This login function is vulnerable to SQL injection. Can you identify the vulnerability?"
-        type: 0 # MultipleChoice
         difficulty: 0 # Beginner
-        category: "Injection"
         code: |
           function checkLogin($username, $password) {
             $query = "SELECT * FROM users WHERE username='" . $username . "' AND password='" . $password . "'";
@@ -161,9 +154,7 @@ challengeSets:
       - id: "sql-injection-2"
         title: "SQL Injection in a Web Handler"
         description: "This HTTP handler contains a security vulnerability. What is it?"
-        type: 0 # MultipleChoice
         difficulty: 1 # Intermediate
-        category: "Injection"
         code: |
           func handleUserProfile(w http.ResponseWriter, r *http.Request) {
               userID := r.URL.Query().Get("id")
@@ -192,9 +183,7 @@ challengeSets:
       - id: "command-injection-1"
         title: "Command Injection in Exec"
         description: "This code is used to ping a server. What vulnerability does it have?"
-        type: 0 # MultipleChoice
         difficulty: 0 # Beginner
-        category: "Injection"
         code: |
           func pingServer(serverAddress string) string {
               cmd := exec.Command("ping", "-c", "3", serverAddress)
@@ -213,15 +202,14 @@ challengeSets:
         hint: "Think about what happens if serverAddress contains special shell characters."
         lang: "Go"
 
-  - category: "A04:2021 – Insecure Design"
+  - category: "Insecure Design"
+    id: "insecure-design"
     description: "Insecure design refers to flaws in application design and architecture rather than implementation bugs."
     challenges:
       - id: "insecure-design-1"
         title: "Insecure Password Recovery"
         description: "This password recovery system has a design flaw. What is it?"
-        type: 0 # MultipleChoice
         difficulty: 1 # Intermediate
-        category: "Insecure Design"
         code: |
           func PasswordRecovery(w http.ResponseWriter, r *http.Request) {
               if r.Method != "POST" {
@@ -267,15 +255,14 @@ challengeSets:
         hint: "Consider the entire password recovery flow. What would make this more secure?"
         lang: "Go"
 
-  - category: "A05:2021 – Security Misconfiguration"
+  - category: "Security Misconfiguration"
+    id: "security-misconfiguration"
     description: "Security misconfiguration is commonly a result of insecure default configurations."
     challenges:
       - id: "security-misconfig-1"
         title: "Verbose Error Messages"
         description: "This database access code has a security issue. What is it?"
-        type: 0 # MultipleChoice
         difficulty: 0 # Beginner
-        category: "Security Misconfiguration"
         code: |
           func ConnectToDatabase(w http.ResponseWriter, r *http.Request) {
               dbUser := os.Getenv("DB_USER")
@@ -305,15 +292,14 @@ challengeSets:
         hint: "What information might be exposed in the error message that could help an attacker?"
         lang: "Go"
 
-  - category: "A06:2021 – Vulnerable and Outdated Components"
+  - category: "Vulnerable and Outdated Components"
+    id: "vulnerable-outdated-components"
     description: "Using components with known vulnerabilities can undermine application defenses and enable various attacks."
     challenges:
       - id: "outdated-components-1"
         title: "Vulnerable Dependencies"
         description: "This package.json file has a security issue. What is it?"
-        type: 0 # MultipleChoice
         difficulty: 0 # Beginner
-        category: "Vulnerable and Outdated Components"
         code: |
           {
             "name": "my-web-app",
@@ -338,15 +324,14 @@ challengeSets:
         hint: "Check the version numbers. Many of these packages have had serious vulnerabilities discovered after these versions were released."
         lang: "json"
 
-  - category: "A07:2021 – Identification and Authentication Failures"
+  - category: "Identification and Authentication Failures"
+    id: "identification-and-auth-failures"
     description: "Authentication failures related to user identity, authentication, and session management."
     challenges:
       - id: "auth-1"
         title: "Insecure Session Management"
         description: "What security vulnerability exists in this session creation code?"
-        type: 0 # MultipleChoice
         difficulty: 1 # Intermediate
-        category: "Identification and Authentication Failures"
         code: |
           func createSession(userID int) string {
               // Generate session token
@@ -370,9 +355,7 @@ challengeSets:
       - id: "auth-2"
         title: "Weak Password Policy"
         description: "This password validation function has a security issue. What is it?"
-        type: 0 # MultipleChoice
         difficulty: 0 # Beginner
-        category: "Identification and Authentication Failures"
         code: |
           function validatePassword(password) {
               // Check password length
@@ -391,15 +374,14 @@ challengeSets:
         hint: "What makes a strong password policy?"
         lang: "Javascript"
 
-  - category: "A08:2021 – Software and Data Integrity Failures"
+  - category: "Software and Data Integrity Failures"
+    id: "software-and-data-integrity-failures"
     description: "Software and data integrity failures relate to code and infrastructure that does not protect against integrity violations."
     challenges:
       - id: "integrity-1"
         title: "Insecure Deserialization"
         description: "This code deserializes user data from a cookie. What vulnerability exists?"
-        type: 0 # MultipleChoice
         difficulty: 1 # Intermediate
-        category: "Software and Data Integrity Failures"
         code: |
           func loadUserPreferences(r *http.Request) map[string]interface{} {
               // Get preferences cookie
@@ -431,15 +413,14 @@ challengeSets:
         hint: "What prevents an attacker from modifying the cookie to inject unexpected values?"
         lang: "Go"
 
-  - category: "A09:2021 – Security Logging and Monitoring Failures"
+  - category: "Security Logging and Monitoring Failures"
+    id: "security-logging-and-monitoring-failures"
     description: "This category helps detect, escalate, and respond to active breaches. Without logging and monitoring, breaches cannot be detected."
     challenges:
       - id: "logging-1"
         title: "Insufficient Logging"
         description: "This login handler has a security monitoring issue. What is it?"
-        type: 0 # MultipleChoice
         difficulty: 0 # Beginner
-        category: "Security Logging and Monitoring Failures"
         code: |
           func handleLogin(w http.ResponseWriter, r *http.Request) {
               username := r.FormValue("username")
@@ -470,15 +451,14 @@ challengeSets:
         hint: "How would you detect brute force attacks or compromised accounts?"
         lang: "Go"
 
-  - category: "A10:2021 – Server-Side Request Forgery"
+  - category: "Server-Side Request Forgery"
+    id: "ssrf"
     description: "SSRF flaws occur when a web application fetches a remote resource without validating the user-supplied URL."
     challenges:
       - id: "ssrf-1"
         title: "Basic SSRF Vulnerability"
         description: "This function fetches a user-specified URL. What security issue does it have?"
-        type: 0 # MultipleChoice
         difficulty: 1 # Intermediate
-        category: "Server-Side Request Forgery"
         code: |
           func fetchExternalResource(w http.ResponseWriter, r *http.Request) {
               // Get URL from request

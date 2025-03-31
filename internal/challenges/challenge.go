@@ -29,7 +29,6 @@ type Challenge struct {
 	Description   string          `yaml:"description"`
 	Type          ChallengeType   `yaml:"type"` // Multiple choice or code fix
 	Difficulty    DifficultyLevel `yaml:"difficulty"`
-	Category      string          `yaml:"category"`      // Security category (e.g., "SQL Injection")
 	Code          string          `yaml:"code"`          // The vulnerable code to display
 	Options       []string        `yaml:"options"`       // For multiple choice: possible answers
 	CorrectAnswer string          `yaml:"correctAnswer"` // For multiple choice: correct option
@@ -40,7 +39,8 @@ type Challenge struct {
 
 // group of related challenges
 type ChallengeSet struct {
-	Category    string      `yaml:"category"`    // Category name
+	Category    string      `yaml:"category"` // Category name
+	ID          string      `yaml:"id"`
 	Description string      `yaml:"description"` // Category description
 	Challenges  []Challenge `yaml:"challenges"`  // Challenges in this category
 }

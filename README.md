@@ -1,6 +1,6 @@
 # 🔦 blindspot - a code security game!
 
-A CLI-based interactive game designed to train yourself to identify insecure coding practices based on the OWASP Top 10, in a practical and fun way!
+A terminal interactive game with CLI support designed to train yourself to identify insecure coding practices based on the OWASP Top 10, in a practical and fun way!
 
 Feel free to play, analyze, modify, and contribute. New ideas and collaborations are always welcome :)
 
@@ -42,7 +42,7 @@ blindspot/
 
 ## ✨ Features
 
-The following features can be accessed in the "Settings" section, allowing players to customize their learning experience:
+The following features can be accessed in the "Settings" section, which allows you to customize your learning experience:
 
 ### 🔍 Vulnerability Name Display Toggle
 
@@ -69,6 +69,11 @@ Track your learning journey through each vulnerability category wit completion p
 
 ## FAQ
 
+### Q: I want to erase my progress and saved settings, how can I do this?
+
+A: You can accomplish this by going into your root directory and deleting
+".blindspot-game" folder. This is the folder where both things are saved.
+
 ### Q: I want to write my own challenges, how can I do this?
 
 A: You can accomplish this by changing your assets/challenges.yaml and filling information according
@@ -82,9 +87,7 @@ your questions. Each question needs to be in the following format:
   - id: string,
     title: string, name of vulnerability,
     description: string, with brief description about problem,
-    type: 0 for a Multiple Choice question,
     difficulty: 0 for Beginner, 1 for Intermediate and 2 for Advanced,
-    category: string,
     code: |
 
     - your code pasted here -
@@ -112,18 +115,21 @@ your questions. Each question needs to be in the following format:
 - [x] Add ability to skip challenges
 - [x] Include vulnerability explanations in category sections
 - [x] Fix some texts line break (menu screen)
+- [x] Add Congratulation screen when finishing all challenges
+- [x] Add progess data erasing in Settings
+- [x] Correct vuln explanation to go back to its origin and not main menu when user presses back key
+- [x] Add user errors count in each category for statistics
 
 ### In Progress
 
-- [ ] Add Section 2 for practical exercises
 - [ ] Implement adaptive text color based on terminal theme
 - [ ] Fix and improve help text clarity
-- [ ] Complete manual review of challenges.yaml
-- [ ] Correct vuln explanation to go back to its origin and not main menu when user presses back key
-- [ ] Add Congratulation screen when finishing all challenges
-- [ ] Add user errors count in each category for statistics
 - [ ] Add command for openning a random challenge with difficulty and category as params
 - [ ] Resolve bug in game mode toggle
+- [ ] Add scroll when height is too big for terminal view
+- [ ] Look for better code highlighting theme
+- [ ] Review code and improve
+- [ ] Complete manual review of challenges.yaml
 
 ## 📜 License
 

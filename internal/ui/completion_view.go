@@ -131,7 +131,7 @@ func (v *CompletionView) View() string {
 		b.WriteString(highlightStyle.Render(statsMessage) + "\n\n")
 	}
 
-	thankYou := utils.WrapText("Thank you for playing blindspot and joining our mission to create more secure software. Keep learning, keep coding securely!", v.width)
+	thankYou := utils.WrapText("Thank you for playing blindspot and joining the mission of creating safer code. Keep learning, keep improving!", v.width)
 	b.WriteString(textStyle.Render(thankYou) + "\n\n")
 
 	if v.showHelp {

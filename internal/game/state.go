@@ -15,6 +15,7 @@ type UserProgress struct {
 	CurrentCategoryIdx     int             `json:"currentCategoryIdx"`
 	CurrentChallengeIdx    int             `json:"currentChallengeIdx"`
 	RandomizedChallengeIDs []string        `json:"randomizedChallengeIDs"`
+	CategoryErrorCounts    map[string]int  `json:"categoryErrorCounts"`
 	IsRandomMode           bool            `json:"isRandomMode"`
 }
 
@@ -201,6 +202,10 @@ func (gs *GameState) GetCurrentChallenge() challenges.Challenge {
 	return gs.ChallengeSets[gs.CurrentCategoryIdx].Challenges[gs.CurrentChallengeIdx]
 }
 
+func (gs *GameState) GetCurrentCategory() string {
+	return gs.ChallengeSets[gs.CurrentCategoryIdx].Category
+}
+
 func (gs *GameState) MoveToNextChallenge() bool {
 	if gs.UseRandomizedOrder {
 		// In randomized mode, just increment the challenge index
@@ -323,6 +328,7 @@ func loadProgress(configDir string) (UserProgress, error) {
 	if err != nil {
 		return UserProgress{
 			CompletedChallenges: make(map[string]bool),
+			CategoryErrorCounts: make(map[string]int),
 		}, err
 	}
 
@@ -331,6 +337,7 @@ func loadProgress(configDir string) (UserProgress, error) {
 	if err != nil {
 		return UserProgress{
 			CompletedChallenges: make(map[string]bool),
+			CategoryErrorCounts: make(map[string]int),
 		}, err
 	}
 
@@ -490,4 +497,14 @@ func (gs *GameState) ShouldShowVulnerabilityExplanation(category string) bool {
 	}
 
 	return gs.GetCategoryCompletionPercentage(category) == 100
+}
+
+func (gs *GameState) AddErrorCount(challengeCategory string) {
+	if gs.Progress.CategoryErrorCounts == nil {
+		gs.Progress.CategoryErrorCounts = make(map[string]int)
+	}
+
+	gs.Progress.CategoryErrorCounts[challengeCategory]++
+
+	gs.SaveProgress()
 }
