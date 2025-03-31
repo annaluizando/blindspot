@@ -291,12 +291,14 @@ func (gs *GameState) GetNextIncompleteChallenge() (challenges.Challenge, bool) {
 }
 
 func (gs *GameState) EraseProgressData() {
-	config, err := getConfigDir()
+	configDir, err := getConfigDir()
+	progressPath := filepath.Join(configDir, "progress.json")
+
 	if err != nil {
 		return
 	}
 
-	err = os.Remove(config)
+	err = os.Remove(progressPath)
 	if err != nil {
 		// to-do: handle error
 		return
