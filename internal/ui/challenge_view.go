@@ -165,9 +165,8 @@ func (m *ChallengeView) updateContent() {
 
 	// Apply syntax highlighting to the code
 	highlightedCode := utils.HighlightCode(m.challenge.Code, language)
-	wrappedCode := utils.WrapText(highlightedCode, m.width)
 
-	b.WriteString(codeBoxStyle.Render(wrappedCode) + "\n\n")
+	b.WriteString(codeBoxStyle.Render(highlightedCode) + "\n\n")
 
 	b.WriteString(descStyle.Render("What vulnerability is in this code?") + "\n\n")
 

@@ -231,7 +231,7 @@ func (m *MenuView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.gameState.UseRandomizedOrder = m.gameState.Settings.GameMode == "random-by-difficulty"
 
 					if m.gameState.UseRandomizedOrder && len(m.gameState.RandomizedChallenges) == 0 {
-						m.gameState.RandomizedChallenges = m.gameState.GetRandomizedChallengesByDifficulty()
+						m.gameState.RandomizedChallenges = m.gameState.GetChallengesGroupedByDifficulty()
 						m.gameState.SaveRandomizedOrder()
 					}
 

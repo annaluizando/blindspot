@@ -19,16 +19,24 @@ make install
 
 ### Playing
 
-Now, to play blindspot, you simply need to run by it's name:
+Now, to play blindspot, you can simply run by it's name:
 
 ```
 blindspot
+```
+
+If you want to open blindspot directly in a random challenge, filtering by difficulty, you can run using flags,
+where 0 = Beginner, 1 = Intermediate, 2 = Advanced.
+
+```
+blindspot --difficulty=1
 ```
 
 ## 🔧 Stack
 
 - **Golang** - Core language
 - [**BubbleTea**](https://github.com/charmbracelet/bubbletea) - Terminal UI framework
+- [**Cobra**](https://github.com/spf13/cobra) - for CLI support
 
 ## 📁 Project Structure
 
@@ -41,6 +49,9 @@ blindspot/
 │   ├── challenges/                  # Package for all security challenges
 │   │   ├── challenge.go             # Responsible for loading all challenges
 │   │   └── vuln_explanation.go      # Responsible for loading all vulnerabilities explanation
+|   ├── cli/
+│   │   ├── config.go                # CLI configuration handlers
+│   │   └── runner.go                # Program initialization and running
 │   ├── ui/                          # UI components using Bubbletea
 │   │   ├── styles.go                # Common styles/themes for the UI
 │   │   ├── challenge_view.go        # View for displaying challenges

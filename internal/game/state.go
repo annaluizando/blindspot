@@ -92,7 +92,7 @@ func NewGameState() (*GameState, error) {
 		gs.RandomizedChallenges = gs.restoreRandomizedChallenges(progress.RandomizedChallengeIDs)
 	} else {
 		// Generate a new randomized order
-		gs.RandomizedChallenges = gs.GetRandomizedChallengesByDifficulty()
+		gs.RandomizedChallenges = gs.GetChallengesGroupedByDifficulty()
 		// Save the order of IDs to progress
 		gs.SaveRandomizedOrder()
 	}
@@ -125,7 +125,7 @@ func (gs *GameState) ToggleGameMode() {
 
 	// If we're switching to random mode and don't have randomized challenges yet, generate them
 	if gs.UseRandomizedOrder && len(gs.RandomizedChallenges) == 0 {
-		gs.RandomizedChallenges = gs.GetRandomizedChallengesByDifficulty()
+		gs.RandomizedChallenges = gs.GetChallengesGroupedByDifficulty()
 		gs.SaveRandomizedOrder()
 	}
 
@@ -448,7 +448,7 @@ func (gs *GameState) restoreRandomizedChallenges(ids []string) []challenges.Chal
 
 	// If the restored list is empty (which shouldn't happen), generate a new one
 	if len(result) == 0 {
-		return gs.GetRandomizedChallengesByDifficulty()
+		return gs.GetChallengesGroupedByDifficulty()
 	}
 
 	return result
@@ -464,7 +464,7 @@ func shuffleChallenge(challenges []challenges.Challenge) {
 
 // returns all challenges sorted by difficulty
 // and randomized within each difficulty group
-func (gs *GameState) GetRandomizedChallengesByDifficulty() []challenges.Challenge {
+func (gs *GameState) GetChallengesGroupedByDifficulty() []challenges.Challenge {
 	beginnerChallenges := []challenges.Challenge{}
 	intermediateChallenges := []challenges.Challenge{}
 	advancedChallenges := []challenges.Challenge{}
