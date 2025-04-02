@@ -108,8 +108,7 @@ Track your learning journey through each vulnerability category wit completion p
 
 ### Q: I want to erase my progress and saved settings, how can I do this?
 
-A: You can accomplish this by going into your root directory and deleting
-".blindspot-game" folder. This is the folder where both things are saved.
+A: You can accomplish this by running the game > selecting "Settings" > clicking "Delete all progress data"
 
 ### Q: I want to write my own challenges, how can I do this?
 
@@ -156,19 +155,18 @@ your questions. Each question needs to be in the following format:
 - [x] Add progess data erasing in Settings
 - [x] Correct vuln explanation to go back to its origin and not main menu when user presses back key
 - [x] Add user errors count in each category for statistics
+- [x] Add scroll when height is too big for terminal view
 
 ### In Progress
 
 - [ ] Implement adaptive text color based on terminal theme
 - [+-] Fix and improve help text clarity
 - [ ] Resolve bug in game mode toggle
-- [ ] Add scroll when height is too big for terminal view
-  > scroll will happen using j/k as arrow keys and arrow keys itself will work for
-  > selecting the response.
 - [+-] Look for better code highlighting theme
 - [+-] Review code and improve
 - [ ] Complete manual review of challenges.yaml
-- [ ] Add cli support
+- [+-] Add cli support
+  > add more flags
 
 ## 📜 License
 

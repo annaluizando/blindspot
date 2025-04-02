@@ -674,7 +674,7 @@ func NewSettingsMenu(gs *game.GameState, width, height int) *MenuView {
 			ID: "setting-ordermode",
 		},
 		{
-			Title: "Delete progress data",
+			Title: "Delete all progress data",
 			Description: "Erases ALL progress data and begin game from start.\n" +
 				"!!! Be aware this will make you loose ALL your current progress. \n",
 			ID: "setting-deleteprogress",
