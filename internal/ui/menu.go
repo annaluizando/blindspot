@@ -6,14 +6,17 @@ import (
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
+	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 
 	"blindspot/internal/challenges"
 	"blindspot/internal/game"
 	"blindspot/internal/utils"
 )
 
-// represents different types of menus
+var dimStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+
 type MenuType int
 
 const (
@@ -24,25 +27,33 @@ const (
 	SettingsMenu
 )
 
-// defines keybindings for menus
 type MenuKeyMap struct {
-	Up     key.Binding
-	Down   key.Binding
-	Select key.Binding
-	Back   key.Binding
-	Help   key.Binding
-	Quit   key.Binding
+	Up         key.Binding
+	Down       key.Binding
+	ScrollUp   key.Binding
+	ScrollDown key.Binding
+	Select     key.Binding
+	Back       key.Binding
+	Help       key.Binding
+	Quit       key.Binding
 }
 
-// holds the key mappings for menus
 var MenuKeys = MenuKeyMap{
 	Up: key.NewBinding(
-		key.WithKeys("up", "k"),
-		key.WithHelp("↑/k", "move up"),
+		key.WithKeys("up"),
+		key.WithHelp("↑", "move up"),
 	),
 	Down: key.NewBinding(
-		key.WithKeys("down", "j"),
-		key.WithHelp("↓/j", "move down"),
+		key.WithKeys("down"),
+		key.WithHelp("↓", "move down"),
+	),
+	ScrollUp: key.NewBinding(
+		key.WithKeys("k"),
+		key.WithHelp("k", "scroll up"),
+	),
+	ScrollDown: key.NewBinding(
+		key.WithKeys("j"),
+		key.WithHelp("j", "scroll down"),
 	),
 	Select: key.NewBinding(
 		key.WithKeys("enter", "space"),
@@ -69,12 +80,10 @@ type MenuItem struct {
 	ID          string
 }
 
-// sent when a category is selected
 type SelectCategoryMsg struct {
 	CategoryIndex int
 }
 
-// sent when a challenge is selected
 type SelectChallengeMsg struct {
 	Challenge challenges.Challenge
 }
@@ -91,14 +100,65 @@ type MenuView struct {
 	height      int
 	description string
 	sourceMenu  MenuType
+	viewport    viewport.Model
+	contentStr  string
 }
 
 func (m *MenuView) Init() tea.Cmd {
+	m.updateContent()
 	return nil
 }
 
 // handles messages and user input
+func (m *MenuView) updateContent() {
+	var b strings.Builder
+
+	b.WriteString(titleStyle.Render(m.title) + "\n\n")
+	wrappedDescription := utils.WrapText(m.description, m.width)
+	b.WriteString(descriptionStyle.Render(wrappedDescription) + "\n\n")
+
+	for i, item := range m.items {
+		cursor := " "
+		if m.cursor == i {
+			cursor = ">"
+		}
+
+		status := " "
+		if item.Completed {
+			status = "✓"
+		}
+
+		line := fmt.Sprintf("%s %s %s", cursor, status, item.Title)
+		if m.cursor == i {
+			b.WriteString(selectedItemStyle.Render(line) + "\n")
+
+			wrappedItemDescription := utils.WrapText(item.Description, m.width)
+			b.WriteString(itemDescriptionStyle.Render(wrappedItemDescription) + "\n\n")
+		} else {
+			b.WriteString(itemStyle.Render(line) + "\n")
+		}
+	}
+
+	// Calculate space for help
+	helpHeight := 1
+	if m.showHelp {
+		helpHeight = 4 // Full help takes more space
+	}
+
+	// Create or update the viewport
+	m.contentStr = b.String()
+	contentHeight := strings.Count(m.contentStr, "\n") + 1
+
+	// If content is shorter than available height, no scrolling needed
+	viewportHeight := min(contentHeight, m.height-helpHeight-1)
+
+	m.viewport = viewport.New(m.width, viewportHeight)
+	m.viewport.SetContent(m.contentStr)
+}
+
 func (m *MenuView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch {
@@ -108,37 +168,58 @@ func (m *MenuView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, MenuKeys.Up):
 			if m.cursor > 0 {
 				m.cursor--
+				m.updateContent()
+				// Try to keep the cursor visible
+				cursorPos := strings.Index(m.contentStr, ">")
+				if cursorPos > -1 {
+					m.viewport.SetYOffset(0) // Reset to top first
+					linesBefore := strings.Count(m.contentStr[:cursorPos], "\n")
+					if linesBefore > m.viewport.Height/2 {
+						m.viewport.SetYOffset(linesBefore - m.viewport.Height/2)
+					}
+				}
 			}
 
 		case key.Matches(msg, MenuKeys.Down):
 			if m.cursor < len(m.items)-1 {
 				m.cursor++
+				m.updateContent()
+				// Try to keep the cursor visible
+				cursorPos := strings.Index(m.contentStr, ">")
+				if cursorPos > -1 {
+					m.viewport.GotoTop()
+					linesBefore := strings.Count(m.contentStr[:cursorPos], "\n")
+					if linesBefore > m.viewport.Height/2 {
+						m.viewport.SetYOffset(linesBefore - m.viewport.Height/2)
+					}
+				}
 			}
+
+		case key.Matches(msg, MenuKeys.ScrollUp):
+			m.viewport.LineUp(1)
+
+		case key.Matches(msg, MenuKeys.ScrollDown):
+			m.viewport.LineDown(1)
 
 		case key.Matches(msg, MenuKeys.Help):
 			m.showHelp = !m.showHelp
+			m.updateContent()
 
 		case key.Matches(msg, MenuKeys.Back):
-			// Handle back navigation based on current menu type
 			if m.type_ == CategoryMenu {
-				// Go back to main menu from categories
 				newMenu := NewMainMenu(m.gameState, m.width, m.height)
 				return newMenu, nil
 			} else if m.type_ == ChallengeMenu {
-				// For challenge menu, check the source
 				if m.sourceMenu == ProgressMenu {
-					// If came from progress, go back to progress
 					newMenu := NewProgressMenu(m.gameState, m.width, m.height)
 					return newMenu, nil
 				}
 				newMenu := NewCategoriesMenu(m.gameState, m.width, m.height, MainMenu)
 				return newMenu, nil
 			} else if m.type_ == ProgressMenu {
-				// When in progress menu, go back to main menu
 				newMenu := NewMainMenu(m.gameState, m.width, m.height)
 				return newMenu, nil
 			} else if m.type_ == SettingsMenu {
-				// When in settings menu, go back to main menu
 				newMenu := NewMainMenu(m.gameState, m.width, m.height)
 				return newMenu, nil
 			}
@@ -149,7 +230,6 @@ func (m *MenuView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				case 0: // Start Game
 					m.gameState.UseRandomizedOrder = m.gameState.Settings.GameMode == "random-by-difficulty"
 
-					// if in random mode and don't have randomized challenges yet, generate them
 					if m.gameState.UseRandomizedOrder && len(m.gameState.RandomizedChallenges) == 0 {
 						m.gameState.RandomizedChallenges = m.gameState.GetRandomizedChallengesByDifficulty()
 						m.gameState.SaveRandomizedOrder()
@@ -160,7 +240,6 @@ func (m *MenuView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 					if found {
 						challenge = m.gameState.GetCurrentChallenge()
-						// Go directly to current challenge
 						return m, func() tea.Msg {
 							return SelectChallengeMsg{Challenge: challenge}
 						}
@@ -185,7 +264,6 @@ func (m *MenuView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				newMenu := NewCategoryMenu(m.gameState, m.cursor, m.width, m.height, m.type_)
 				return newMenu, nil
 			} else if m.type_ == ProgressMenu {
-				// Create a new challenge menu when coming from Progress Menu
 				newMenu := NewCategoryMenu(m.gameState, m.cursor, m.width, m.height, m.type_)
 				return newMenu, nil
 			} else if m.type_ == ChallengeMenu {
@@ -200,12 +278,10 @@ func (m *MenuView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						}
 					}
 
-					// Create and return explanation view
 					explanationView := NewExplanationView(m.gameState, sampleChallenge, m.width, m.height, m.type_, false)
 					return explanationView, nil
 				}
 
-				// Handle regular challenge selection (existing code)
 				for _, set := range m.gameState.ChallengeSets {
 					for _, challenge := range set.Challenges {
 						if challenge.ID == m.items[m.cursor].ID {
@@ -218,19 +294,14 @@ func (m *MenuView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else if m.type_ == SettingsMenu {
 				if m.cursor == 0 { // Vulnerability Names toggle
 					m.gameState.ToggleShowVulnerabilityNames()
-
-					// Create a new settings menu to refresh the display
 					newMenu := NewSettingsMenu(m.gameState, m.width, m.height)
 					return newMenu, nil
 				} else if m.cursor == 1 { // Challenge Order toggle
 					m.gameState.ToggleGameMode()
-
-					// Create a new settings menu to refresh the display
 					newMenu := NewSettingsMenu(m.gameState, m.width, m.height)
 					return newMenu, nil
 				} else if m.cursor == 2 { // Delete Progress Data
 					m.gameState.EraseProgressData()
-
 					newMenu := NewSettingsMenu(m.gameState, m.width, m.height)
 					return newMenu, nil
 				} else if m.cursor == 3 { // Back to Main Menu
@@ -243,54 +314,54 @@ func (m *MenuView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
+		m.updateContent()
+		m.viewport.Width = msg.Width
+		viewportHeight := m.height - 1
+		if m.showHelp {
+			viewportHeight -= 4
+		} else {
+			viewportHeight -= 1
+		}
+		m.viewport.Height = viewportHeight
 	}
 
-	return m, nil
+	// Handle viewport updates
+	m.viewport, cmd = m.viewport.Update(msg)
+	return m, cmd
 }
 
-// renders the menu
 func (m *MenuView) View() string {
 	var b strings.Builder
 
-	b.WriteString(titleStyle.Render(m.title) + "\n\n")
+	// Show the viewport content
+	b.WriteString(m.viewport.View())
 
-	wrappedDescription := utils.WrapText(m.description, m.width)
-	b.WriteString(descriptionStyle.Render(wrappedDescription) + "\n\n")
-
-	// Menu items
-	for i, item := range m.items {
-		cursor := " "
-		if m.cursor == i {
-			cursor = ">"
-		}
-
-		status := " "
-		if item.Completed {
-			status = "✓"
-		}
-
-		line := fmt.Sprintf("%s %s %s", cursor, status, item.Title)
-		if m.cursor == i {
-			b.WriteString(selectedItemStyle.Render(line) + "\n")
-
-			wrappedItemDescription := utils.WrapText(item.Description, m.width)
-			b.WriteString(itemDescriptionStyle.Render(wrappedItemDescription) + "\n\n")
-		} else {
-			b.WriteString(itemStyle.Render(line) + "\n")
-		}
+	// Add scroll status indicator - check if we can scroll
+	hasScroll := m.viewport.YOffset > 0 || m.viewport.YOffset+m.viewport.Height < strings.Count(m.contentStr, "\n")+1
+	if hasScroll {
+		scrollInfo := fmt.Sprintf(" Line %d of %d ",
+			m.viewport.YOffset+1,
+			strings.Count(m.contentStr, "\n")+1)
+		b.WriteString("\n" + dimStyle.Render("j/k to scroll, currently at") + scrollInfo)
 	}
 
 	// Help
 	if m.showHelp {
 		b.WriteString("\n" + m.help.View(MenuKeys))
 	} else {
-		b.WriteString("\n" + helpHintStyle.Render("Press ? for help"))
+		helpText := "Press ? for help | ↑/↓ to navigate | j/k to scroll"
+		if m.width < 60 {
+			helpText = "? for help | ↑/↓ nav | j/k scroll"
+		}
+		if !hasScroll {
+			helpText = strings.Replace(helpText, " | j/k to scroll", "", 1)
+		}
+		b.WriteString("\n" + helpHintStyle.Render(helpText))
 	}
 
 	return b.String()
 }
 
-// main menu with options
 func NewMainMenu(gs *game.GameState, width, height int) *MenuView {
 	items := []MenuItem{
 		{Title: "Start Game", Description: "Begin playing from where you left off"},
@@ -319,7 +390,7 @@ func NewMainMenu(gs *game.GameState, width, height int) *MenuView {
 	・．．・゜゜・．．・゜゜・．．・゜゜・．．・゜゜・．．・゜゜
 	 	`
 
-	return &MenuView{
+	menu := &MenuView{
 		type_:       MainMenu,
 		title:       ascii,
 		items:       items,
@@ -327,20 +398,20 @@ func NewMainMenu(gs *game.GameState, width, height int) *MenuView {
 		help:        help.New(),
 		width:       width,
 		height:      height,
-		description: utils.WrapText("Train your eye to find and fix insecure coding practices through challenges!\nIdentify common security vulnerabilities based on the OWASP Top 10.", width),
+		description: "Train your eye to find and fix insecure coding practices through challenges!\nIdentify common security vulnerabilities based on the OWASP Top 10.",
 	}
+
+	menu.updateContent()
+	return menu
 }
 
-// creates new menu for all categories display
 func NewCategoriesMenu(gs *game.GameState, width, height int, source MenuType) *MenuView {
 	items := make([]MenuItem, len(gs.ChallengeSets))
 
 	for i, set := range gs.ChallengeSets {
-		// completion percentage calculation
 		completed := gs.GetCategoryCompletionPercentage(set.Category)
 		completionText := fmt.Sprintf("[%d%% Complete]", completed)
 
-		// difficulty levels/indicator
 		hasBeginner := false
 		hasIntermediate := false
 		hasAdvanced := false
@@ -367,7 +438,6 @@ func NewCategoriesMenu(gs *game.GameState, width, height int, source MenuType) *
 			difficultyIndicator += difficultyStyle["advanced"].Render("[A]") + " "
 		}
 
-		// full category information for "Categories" containing: description, difficulties and completion percentage.
 		enhancedDescription := utils.WrapText(set.Description, width) + "\n" + difficultyIndicator + completionText
 
 		items[i] = MenuItem{
@@ -378,7 +448,7 @@ func NewCategoriesMenu(gs *game.GameState, width, height int, source MenuType) *
 		}
 	}
 
-	return &MenuView{
+	menu := &MenuView{
 		type_:       CategoryMenu,
 		title:       "Challenge Categories",
 		items:       items,
@@ -386,9 +456,12 @@ func NewCategoriesMenu(gs *game.GameState, width, height int, source MenuType) *
 		help:        help.New(),
 		width:       width,
 		height:      height,
-		description: utils.WrapText("Select any category to view its challenges.\nCategories contain challenges of various difficulty levels based on the OWASP Top 10.", width),
+		description: "Select any category to view its challenges.\nCategories contain challenges of various difficulty levels based on the OWASP Top 10.",
 		sourceMenu:  source,
 	}
+
+	menu.updateContent()
+	return menu
 }
 
 func NewCategoryMenu(gs *game.GameState, categoryIndex int, width, height int, source MenuType) *MenuView {
@@ -402,7 +475,6 @@ func NewCategoryMenu(gs *game.GameState, categoryIndex int, width, height int, s
 		ID:          "explanation-" + category.Category,
 	})
 
-	// Add all challenges for this category
 	for _, challenge := range category.Challenges {
 		completed := gs.IsChallengeCompleted(challenge.ID)
 		difficultyText := ""
@@ -430,7 +502,7 @@ func NewCategoryMenu(gs *game.GameState, categoryIndex int, width, height int, s
 		})
 	}
 
-	return &MenuView{
+	menu := &MenuView{
 		type_:       ChallengeMenu,
 		title:       fmt.Sprintf("%s Challenges", category.Category),
 		items:       items,
@@ -441,19 +513,19 @@ func NewCategoryMenu(gs *game.GameState, categoryIndex int, width, height int, s
 		description: utils.WrapText(category.Description, width),
 		sourceMenu:  source,
 	}
+
+	menu.updateContent()
+	return menu
 }
 
-// creates new progress menu showing completion across all categories
 func NewProgressMenu(gs *game.GameState, width, height int) *MenuView {
 	items := make([]MenuItem, len(gs.ChallengeSets))
 
 	var totalChallenges, completedChallenges int
 
-	// Create menu items for each category with completion details
 	for i, set := range gs.ChallengeSets {
 		completed := gs.GetCategoryCompletionPercentage(set.Category)
 
-		// Count challenges for overall statistics
 		categoryCompleted := 0
 		for _, challenge := range set.Challenges {
 			totalChallenges++
@@ -510,7 +582,6 @@ func NewProgressMenu(gs *game.GameState, width, height int) *MenuView {
 			}
 		}
 
-		// category error statistics
 		categoryErrorCount := 0
 		if gs.Progress.CategoryErrorCounts != nil {
 			categoryErrorCount = gs.Progress.CategoryErrorCounts[set.Category]
@@ -553,7 +624,6 @@ func NewProgressMenu(gs *game.GameState, width, height int) *MenuView {
 		}
 	}
 
-	// Overall completion percentage
 	overallPercentage := 0
 	if totalChallenges > 0 {
 		overallPercentage = (completedChallenges * 100) / totalChallenges
@@ -563,7 +633,7 @@ func NewProgressMenu(gs *game.GameState, width, height int) *MenuView {
 		completedChallenges, totalChallenges, overallPercentage)
 	description += "Select a category to see detailed progress statistics.\nPress Enter on a category to view its challenges."
 
-	return &MenuView{
+	menu := &MenuView{
 		type_:       ProgressMenu,
 		title:       "Your Progress",
 		items:       items,
@@ -574,9 +644,11 @@ func NewProgressMenu(gs *game.GameState, width, height int) *MenuView {
 		description: utils.WrapText(description, width),
 		sourceMenu:  MainMenu,
 	}
+
+	menu.updateContent()
+	return menu
 }
 
-// menu component for game settings
 func NewSettingsMenu(gs *game.GameState, width, height int) *MenuView {
 	vulnerabilityNamesStatus := "Show"
 	if !gs.Settings.ShowVulnerabilityNames {
@@ -614,7 +686,7 @@ func NewSettingsMenu(gs *game.GameState, width, height int) *MenuView {
 		},
 	}
 
-	return &MenuView{
+	menu := &MenuView{
 		type_:       SettingsMenu,
 		title:       "Game Settings",
 		items:       items,
@@ -625,9 +697,11 @@ func NewSettingsMenu(gs *game.GameState, width, height int) *MenuView {
 		description: "Configure your game preferences. These settings will be saved for future sessions.",
 		sourceMenu:  MainMenu,
 	}
+
+	menu.updateContent()
+	return menu
 }
 
-// ---- helpers ----
 func (k MenuKeyMap) ShortHelp() []key.Binding {
 	return []key.Binding{k.Help, k.Quit}
 }
@@ -635,6 +709,7 @@ func (k MenuKeyMap) ShortHelp() []key.Binding {
 func (k MenuKeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{k.Up, k.Down},
+		{k.ScrollUp, k.ScrollDown},
 		{k.Select, k.Back},
 		{k.Help, k.Quit},
 	}

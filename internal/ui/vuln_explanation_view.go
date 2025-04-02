@@ -6,6 +6,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
+	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
@@ -20,10 +21,12 @@ type backToMenuMsg struct{}
 
 // defines keybindings for the explanation view
 type ExplanationKeyMap struct {
-	Next key.Binding
-	Back key.Binding
-	Help key.Binding
-	Quit key.Binding
+	ScrollUp   key.Binding
+	ScrollDown key.Binding
+	Next       key.Binding
+	Back       key.Binding
+	Help       key.Binding
+	Quit       key.Binding
 }
 
 type ExplanationView struct {
@@ -37,9 +40,19 @@ type ExplanationView struct {
 	help             help.Model
 	showHelp         bool
 	isFromCompletion bool
+	viewport         viewport.Model
+	contentStr       string
 }
 
 var ExplanationKeys = ExplanationKeyMap{
+	ScrollUp: key.NewBinding(
+		key.WithKeys("k"),
+		key.WithHelp("k", "scroll up"),
+	),
+	ScrollDown: key.NewBinding(
+		key.WithKeys("j"),
+		key.WithHelp("j", "scroll down"),
+	),
 	Next: key.NewBinding(
 		key.WithKeys("enter", "n"),
 		key.WithHelp("enter/n", "next challenge"),
@@ -70,7 +83,7 @@ var (
 func NewExplanationView(gs *game.GameState, challenge challenges.Challenge, width, height int, sourceMenu MenuType, isFromCompletion bool) *ExplanationView {
 	explanation, found := gs.GetVulnerabilityExplanation(gs.GetCurrentCategory())
 
-	return &ExplanationView{
+	explanationView := &ExplanationView{
 		gameState:        gs,
 		challenge:        challenge,
 		explanation:      explanation,
@@ -82,14 +95,23 @@ func NewExplanationView(gs *game.GameState, challenge challenges.Challenge, widt
 		showHelp:         false,
 		isFromCompletion: isFromCompletion,
 	}
+
+	viewportHeight := max(height-4, 5)
+	explanationView.viewport = viewport.New(width, viewportHeight)
+	explanationView.updateContent()
+
+	return explanationView
 }
 
 func (v *ExplanationView) Init() tea.Cmd {
+	v.updateContent()
 	return nil
 }
 
 // handles messages and user input
 func (v *ExplanationView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch {
@@ -98,6 +120,7 @@ func (v *ExplanationView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case key.Matches(msg, ExplanationKeys.Help):
 			v.showHelp = !v.showHelp
+			v.updateContent()
 			return v, nil
 
 		case key.Matches(msg, ExplanationKeys.Next):
@@ -123,6 +146,12 @@ func (v *ExplanationView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 
+		case key.Matches(msg, keys.ScrollUp):
+			v.viewport.LineUp(1)
+
+		case key.Matches(msg, keys.ScrollDown):
+			v.viewport.LineDown(1)
+
 		case key.Matches(msg, ExplanationKeys.Back):
 			if v.sourceMenu == ChallengeMenu {
 				// Find the category index
@@ -142,20 +171,25 @@ func (v *ExplanationView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		v.width = msg.Width
 		v.height = msg.Height
+
+		viewportHeight := max(v.height-4, 5)
+		v.viewport.Width = msg.Width
+		v.viewport.Height = viewportHeight
 	}
 
-	return v, nil
+	v.viewport, cmd = v.viewport.Update(msg)
+	return v, cmd
 }
 
-// renders vulnerability explanation
-func (v *ExplanationView) View() string {
+func (v *ExplanationView) updateContent() {
 	var b strings.Builder
 
+	// Add scroll indicator if needed
 	if v.isFromCompletion {
 		b.WriteString(completedStyle.Render("🎉 Challenge Completed!") + "\n\n")
 		b.WriteString(fmt.Sprintf("You've completed: %s\n\n", selectedItemStyle.Render(v.challenge.Title)))
 	} else {
-		b.WriteString(explanationHighlightStyle.Render("Category Explanation") + "\n\n")
+		b.WriteString(explanationHighlightStyle.Render("🔍 Category Explanation") + "\n\n")
 	}
 
 	b.WriteString(fmt.Sprintf("%s\n\n", explanationHighlightStyle.Render(v.gameState.GetCurrentCategory())))
@@ -191,6 +225,50 @@ func (v *ExplanationView) View() string {
 		b.WriteString("\n" + helpHintStyle.Render("Press ? for help"))
 	}
 
+	helpHeight := 1
+	if v.showHelp {
+		helpHeight = 4 // Full help takes vore space
+	}
+
+	// Create or update the viewport
+	v.contentStr = b.String()
+	contentHeight := strings.Count(v.contentStr, "\n") + 1
+
+	// If content is shorter than available height, no scrolling needed
+	viewportHeight := min(contentHeight, v.height-helpHeight-1)
+
+	v.viewport = viewport.New(v.width, viewportHeight)
+	v.viewport.SetContent(v.contentStr)
+}
+
+// renders vulnerability explanation
+func (v *ExplanationView) View() string {
+	var b strings.Builder
+	// Render viewport content
+	b.WriteString(v.viewport.View())
+
+	hasScroll := v.viewport.YOffset > 0 || v.viewport.YOffset+v.viewport.Height < strings.Count(v.contentStr, "\n")+1
+	if hasScroll {
+		scrollInfo := fmt.Sprintf(" Line %d of %d ",
+			v.viewport.YOffset+1,
+			strings.Count(v.contentStr, "\n")+1)
+		b.WriteString("\n" + dimStyle.Render("j/k to scroll, currently at") + scrollInfo)
+	}
+
+	// Help
+	if v.showHelp {
+		b.WriteString("\n" + v.help.View(MenuKeys))
+	} else {
+		helpText := "Press ? for help | ↑/↓ to navigate | j/k to scroll"
+		if v.width < 60 {
+			helpText = "? for help | ↑/↓ nav | j/k scroll"
+		}
+		if !hasScroll {
+			helpText = strings.Replace(helpText, " | j/k to scroll", "", 1)
+		}
+		b.WriteString("\n" + helpHintStyle.Render(helpText))
+	}
+
 	return b.String()
 }
 
@@ -202,6 +280,7 @@ func (k ExplanationKeyMap) ShortHelp() []key.Binding {
 func (k ExplanationKeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{k.Next, k.Back},
+		{k.ScrollUp, k.ScrollDown},
 		{k.Help, k.Quit},
 	}
 }
