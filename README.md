@@ -25,8 +25,13 @@ Now, to play blindspot, you can simply run by it's name:
 blindspot
 ```
 
-If you want to open blindspot directly in a random challenge, filtering by difficulty, you can run using flags,
-where 0 = Beginner, 1 = Intermediate, 2 = Advanced.
+If you want to open blindspot directly in a random challenge, filtering by difficulty, you can run using flags.
+where difficulty levels are:
+0 = Beginner,
+1 = Intermediate,
+2 = Advanced
+
+Example, playing random intermediate challenges:
 
 ```
 blindspot --difficulty=1
