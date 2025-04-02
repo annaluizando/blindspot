@@ -2,6 +2,7 @@
 
 BINARY_NAME=blindspot
 MAIN_PATH=./cmd/game
+GOBIN=$(shell go env GOPATH)/bin
 
 # Build the application
 build:
@@ -12,9 +13,9 @@ clean:
 	go clean
 	rm -f $(BINARY_NAME)
 
-# Install the application to go/bin (using GOPATH if defined, otherwise $HOME/go/bin)
+# Install the application to go/bin
 install: build
-	@mkdir -p $(shell go env GOPATH)/bin
-	mv $(BINARY_NAME) $(shell go env GOPATH)/bin/$(BINARY_NAME)
-	@echo "Installed $(BINARY_NAME) to $(shell go env GOPATH)/bin/"
-	@echo "Make sure $(shell go env GOPATH)/bin is in your PATH to run '$(BINARY_NAME)' from anywhere."
+	@mkdir -p $(GOBIN)
+	mv $(BINARY_NAME) $(GOBIN)/$(BINARY_NAME)
+	@echo "Installed $(BINARY_NAME) to $(GOBIN)/"
+	@echo "Make sure $(GOBIN) is in your PATH to run '$(BINARY_NAME)' from anywhere."
