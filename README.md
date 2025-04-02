@@ -4,6 +4,27 @@ A terminal interactive game designed to train yourself to identify insecure codi
 
 Feel free to play, analyze, modify, and contribute. New ideas and collaborations are always welcome :)
 
+## 🪜 Get Started!
+
+Here is step-by-step what you need to run this project:
+
+### Installation
+
+```
+git clone https://github.com/annaluizando/blindspot.git
+cd blindspot
+make build
+make install
+```
+
+### Playing
+
+Now, to play blindspot, you simply need to run by it's name:
+
+```
+blindspot
+```
+
 ## 🔧 Stack
 
 - **Golang** - Core language
@@ -123,12 +144,15 @@ your questions. Each question needs to be in the following format:
 ### In Progress
 
 - [ ] Implement adaptive text color based on terminal theme
-- [ ] Fix and improve help text clarity
+- [+-] Fix and improve help text clarity
 - [ ] Resolve bug in game mode toggle
 - [ ] Add scroll when height is too big for terminal view
-- [ ] Look for better code highlighting theme
-- [ ] Review code and improve
+  > scroll will happen using j/k as arrow keys and arrow keys itself will work for
+  > selecting the response.
+- [+-] Look for better code highlighting theme
+- [+-] Review code and improve
 - [ ] Complete manual review of challenges.yaml
+- [ ] Add cli support
 
 ## 📜 License
 
