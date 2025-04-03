@@ -26,6 +26,8 @@ blindspot
 ```
 
 If you want to open blindspot directly in a random challenge, filtering by difficulty, you can run using flags.
+Flags:
+--difficulty
 where difficulty levels are:
 0 = Beginner,
 1 = Intermediate,
@@ -35,6 +37,20 @@ Example, playing random intermediate challenges:
 
 ```
 blindspot --difficulty=1
+```
+
+--category
+where categories are categories in challenges.yaml, you can see all categories by using:
+
+```
+blindspot --help
+```
+
+Then, when you know which category you want, pass it's exact string to flag
+Example, playing only injection challenges:
+
+```
+blindspot --category="Injection"
 ```
 
 ## 🔧 Stack
