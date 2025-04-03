@@ -26,7 +26,9 @@ blindspot
 ```
 
 If you want to open blindspot directly in a random challenge, filtering by difficulty, you can run using flags.
-Flags:
+
+#### Flags:
+
 --difficulty
 where difficulty levels are:
 0 = Beginner,
