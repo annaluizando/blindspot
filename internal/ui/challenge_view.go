@@ -92,7 +92,6 @@ type ChallengeView struct {
 	contentStr  string
 }
 
-// NewChallengeView creates a new challenge view
 func NewChallengeView(gs *game.GameState, challenge challenges.Challenge, width, height int, source MenuType) *ChallengeView {
 	helpModel := help.New()
 	helpModel.Width = 80
@@ -117,13 +116,12 @@ func NewChallengeView(gs *game.GameState, challenge challenges.Challenge, width,
 	viewportHeight := max(height-4, 5)
 	challengeView.viewport = viewport.New(width, viewportHeight)
 
-	// Generate initial content
+	// initial content
 	challengeView.updateContent()
 
 	return challengeView
 }
 
-// generates the content for the viewport
 func (m *ChallengeView) updateContent() {
 	var b strings.Builder
 
@@ -150,11 +148,10 @@ func (m *ChallengeView) updateContent() {
 		b.WriteString(categoryStyle.Render(categoryHeader) + "\n\n")
 	}
 
-	// Create a separator for visual clarity
+	// for visual clarity
 	separator := strings.Repeat("─", m.width/2)
 	b.WriteString(subtleStyle.Render(separator) + "\n\n")
 
-	// Detect language from the challenge code to highlight
 	language := ""
 	if len(m.challenge.Lang) > 0 {
 		lang := utils.GetLanguageFromExtension(m.challenge.Lang)
@@ -163,7 +160,6 @@ func (m *ChallengeView) updateContent() {
 		}
 	}
 
-	// Apply syntax highlighting to the code
 	highlightedCode := utils.HighlightCode(m.challenge.Code, language)
 
 	b.WriteString(codeBoxStyle.Render(highlightedCode) + "\n\n")
@@ -175,7 +171,6 @@ func (m *ChallengeView) updateContent() {
 		cursor := "  "
 
 		if m.hasAnswered && m.isCorrect {
-			// Only show the correct answer when the user get it right
 			if option == m.challenge.CorrectAnswer {
 				cursor = "✓ "
 				successStyleCopy := successStyle
@@ -185,13 +180,11 @@ func (m *ChallengeView) updateContent() {
 				renderedOption = cursor + unselectedItemStyle.Render(option)
 			}
 		} else if m.hasAnswered && !m.isCorrect && i == m.cursor {
-			// Mark the user's wrong selection with an X
 			cursor = "✗ "
 			errorStyleCopy := errorStyle
 			errorStyleCopy = errorStyleCopy.Bold(false)
 			renderedOption = cursor + errorStyleCopy.Render(option)
 		} else if !m.hasAnswered {
-			// Not answered yet - normal cursor
 			if m.cursor == i {
 				cursor = "> "
 				renderedOption = cursor + selectedItemStyle.Render(option)
@@ -206,32 +199,27 @@ func (m *ChallengeView) updateContent() {
 		b.WriteString(renderedOption + "\n")
 	}
 
-	// Hint section
 	if m.showHint {
 		b.WriteString("\n" + hintStyle.Render("Hint: "+m.challenge.Hint) + "\n")
 	}
 
-	// Result of submission
 	if m.result != "" {
 		b.WriteString("\n" + m.resultStyle.Render(m.result) + "\n")
 
-		// Show "next challenge" prompt if the answer is correct
 		if m.isCorrect {
 			b.WriteString("\n" + helpHintStyle.Render("Press 'Enter'/'N' to continue to next challenge"))
 		}
 	}
 
-	// Set the content in the viewport
 	m.contentStr = b.String()
 	m.viewport.SetContent(m.contentStr)
 }
 
-// Init initializes the challenge view
 func (m *ChallengeView) Init() tea.Cmd {
 	return nil
 }
 
-// Update handles messages and user input
+// handles messages and user input
 func (m *ChallengeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
@@ -273,7 +261,7 @@ func (m *ChallengeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, keys.Up):
 			if m.cursor > 0 && (!m.hasAnswered || !m.isCorrect) {
 				m.cursor--
-				// Reset the result message for another try
+
 				if m.hasAnswered && !m.isCorrect {
 					m.hasAnswered = false
 					m.result = ""
@@ -283,7 +271,6 @@ func (m *ChallengeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				// Find the cursor position in the content and scroll to it
 				cursorPos := strings.Index(m.contentStr, "> ")
 				if cursorPos > -1 {
-					m.viewport.SetYOffset(0) // Reset to top first
 					linesBefore := strings.Count(m.contentStr[:cursorPos], "\n")
 					if linesBefore > m.viewport.Height/2 {
 						m.viewport.SetYOffset(linesBefore - m.viewport.Height/2)
@@ -301,7 +288,6 @@ func (m *ChallengeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				m.updateContent()
 
-				// Find the cursor position in the content and scroll to it
 				cursorPos := strings.Index(m.contentStr, "> ")
 				if cursorPos > -1 {
 					linesBefore := strings.Count(m.contentStr[:cursorPos], "\n")
@@ -355,14 +341,11 @@ func (m *ChallengeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-// View renders the challenge
 func (m *ChallengeView) View() string {
 	var b strings.Builder
 
-	// Render viewport content
 	b.WriteString(m.viewport.View())
 
-	// Add scroll indicator if needed
 	hasScroll := m.viewport.YOffset > 0 ||
 		m.viewport.YOffset+m.viewport.Height < strings.Count(m.contentStr, "\n")+1
 

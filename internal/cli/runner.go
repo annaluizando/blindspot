@@ -25,13 +25,24 @@ func (r *Runner) Run() {
 
 	r.configureGameState(gameState)
 
-	program, err := ui.InitializeUIWithChallenge(gameState)
-	if err != nil {
-		log.Fatal("Error initializing UI: ", err)
-	}
+	if r.config.WasFlagChanged("difficulty") {
+		program, err := ui.InitializeUIWithChallenge(gameState)
+		if err != nil {
+			log.Fatal("Error initializing UI: ", err)
+		}
 
-	if _, err := program.Run(); err != nil {
-		log.Fatal("Error running program: ", err)
+		if _, err := program.Run(); err != nil {
+			log.Fatal("Error running program: ", err)
+		}
+	} else {
+		program, err := ui.InitializeUI(gameState)
+		if err != nil {
+			log.Fatal("Error initializing UI: ", err)
+		}
+
+		if _, err := program.Run(); err != nil {
+			log.Fatal("Error running program: ", err)
+		}
 	}
 }
 

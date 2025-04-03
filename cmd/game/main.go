@@ -1,19 +1,16 @@
 package main
 
 import (
-	"log"
-
 	"blindspot/internal/cli"
+	"log"
 
 	"github.com/spf13/cobra"
 )
 
 var (
 	difficulty int
-	directMode bool
 )
 
-// base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "blindspot",
 	Short: "blindspot allows access to blindspot from the command line",
@@ -29,7 +26,6 @@ insecure code practices and train yourself!`,
 	},
 }
 
-// adds all child commands to the root command and sets flags appropriately
 func Execute() error {
 	return rootCmd.Execute()
 }
@@ -37,8 +33,6 @@ func Execute() error {
 func init() {
 	rootCmd.Flags().IntVarP(&difficulty, "difficulty", "d", 0,
 		"Set game difficulty (0=beginner, 1=intermediate, 2=advanced)")
-	rootCmd.Flags().BoolVarP(&directMode, "direct", "r", false,
-		"Run directly in challenge mode")
 }
 
 func main() {
