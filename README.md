@@ -29,7 +29,7 @@ If you want to open blindspot directly in a random challenge, filtering by diffi
 
 #### Flags:
 
---difficulty
+--difficulty,
 where difficulty levels are:
 0 = Beginner,
 1 = Intermediate,
@@ -41,7 +41,7 @@ Example, playing random intermediate challenges:
 blindspot --difficulty=1
 ```
 
---category
+--category,
 where categories are categories in challenges.yaml, you can see all categories by using:
 
 ```
