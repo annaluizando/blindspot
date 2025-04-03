@@ -72,14 +72,13 @@ var keys = keyMap{
 	),
 }
 
-// displays a multiple choice vulnerability challenge
 type ChallengeView struct {
 	gameState   *game.GameState
 	challenge   challenges.Challenge
 	cursor      int
-	selected    bool
 	showHint    bool
-	helpModel   help.Model
+	showHelp    bool
+	help        help.Model
 	quizOptions []string
 	result      string
 	resultStyle lipgloss.Style
@@ -90,42 +89,93 @@ type ChallengeView struct {
 	sourceMenu  MenuType
 	viewport    viewport.Model
 	contentStr  string
+	helpHeight  int
 }
 
 func NewChallengeView(gs *game.GameState, challenge challenges.Challenge, width, height int, source MenuType) *ChallengeView {
-	helpModel := help.New()
-	helpModel.Width = 80
+	if width < 40 {
+		width = 80 // Default reasonable width
+	}
+	if height < 15 {
+		height = 24 // Default reasonable height
+	}
+
+	helpHeight := 2
+
+	// Calculate initial viewport height, ensuring minimum space for options
+	viewportHeight := max(height-helpHeight, 15)
 
 	challengeView := &ChallengeView{
 		gameState:   gs,
 		challenge:   challenge,
-		helpModel:   helpModel,
+		help:        help.New(),
 		resultStyle: successStyle,
 		showHint:    false,
 		cursor:      0,
-		selected:    false,
 		width:       width,
 		height:      height,
 		hasAnswered: false,
 		isCorrect:   false,
 		quizOptions: challenge.Options,
 		sourceMenu:  source,
+		helpHeight:  helpHeight,
 	}
 
-	// Initialize the viewport
-	viewportHeight := max(height-4, 5)
 	challengeView.viewport = viewport.New(width, viewportHeight)
+	challengeView.viewport.MouseWheelEnabled = true
 
-	// initial content
 	challengeView.updateContent()
 
 	return challengeView
 }
 
+func (m *ChallengeView) calculateHelpHeight() int {
+	if m.showHelp {
+		// Full help view needs more space - count actual lines in help view
+		helpText := m.help.View(MenuKeys)
+		return strings.Count(helpText, "\n") + 2 // Add a bit of padding
+	}
+	// Just basic help line needs minimal space
+	return 2 // One for the help text, one for spacing
+}
+
+func (m *ChallengeView) updateViewportDimensions() {
+	// Update the help height based on terminal size
+	if m.height < 15 {
+		// Ultra-compact for very small terminals
+		m.helpHeight = 1 // Just one line for minimal help
+	} else if m.height < 20 {
+		// Compact for small terminals
+		m.helpHeight = 1
+		if m.showHelp {
+			// If showing help on small screen, give it a bit more space
+			m.helpHeight = 2
+		}
+	} else {
+		// Normal terminals - calculate help height normally
+		m.helpHeight = m.calculateHelpHeight()
+	}
+
+	// Minimum height required to show at least 3 options plus question
+	minimumOptionsHeight := 5 // 1 for question + 3 options + 1 buffer
+
+	// Calculate viewport height ensuring there's enough room for options
+	viewportHeight := max(m.height-m.helpHeight, minimumOptionsHeight)
+
+	// For very small windows, prioritize content more aggressively
+	if m.height < 12 {
+		// Absolute minimum for help (1 line) regardless of help state
+		m.helpHeight = 1
+		viewportHeight = m.height - 1
+	}
+
+	m.viewport.Height = viewportHeight
+	m.viewport.Width = m.width
+}
+
 func (m *ChallengeView) updateContent() {
 	var b strings.Builder
 
-	// Challenge title with difficulty indicator
 	difficultyText := ""
 	switch m.challenge.Difficulty {
 	case challenges.Beginner:
@@ -213,33 +263,68 @@ func (m *ChallengeView) updateContent() {
 
 	m.contentStr = b.String()
 	m.viewport.SetContent(m.contentStr)
+
+	// Calculate options area position to ensure it's visible
+	optionsStartMarker := "What vulnerability is in this code?"
+	optionsPos := strings.Index(m.contentStr, optionsStartMarker)
+
+	if optionsPos > -1 {
+		linesBeforeOptions := strings.Count(m.contentStr[:optionsPos], "\n")
+
+		totalLines := strings.Count(m.contentStr, "\n") + 1
+
+		// Calculate lines for options area
+		optionsLines := totalLines - linesBeforeOptions
+
+		// If window is small and not all content fits, prioritize showing options
+		if optionsLines+3 > m.viewport.Height {
+			newOffset := max(0, linesBeforeOptions-2)
+			m.viewport.SetYOffset(newOffset)
+		}
+	}
+
+	// Ensure cursor is visible - find cursor position in content
+	if !m.hasAnswered || !m.isCorrect {
+		cursorPos := strings.Index(m.contentStr, "> ")
+		if cursorPos > -1 {
+			linesBefore := strings.Count(m.contentStr[:cursorPos], "\n")
+
+			// Adjust viewport if cursor would be outside visible area
+			if linesBefore < m.viewport.YOffset {
+				m.viewport.SetYOffset(linesBefore)
+			} else if linesBefore >= m.viewport.YOffset+m.viewport.Height-2 {
+				m.viewport.SetYOffset(linesBefore - m.viewport.Height + 3)
+			}
+		}
+	}
 }
 
 func (m *ChallengeView) Init() tea.Cmd {
-	return nil
+	return tea.Sequence(
+		func() tea.Msg {
+			return tea.WindowSizeMsg{
+				Width:  m.width,
+				Height: m.height,
+			}
+		},
+	)
 }
 
-// handles messages and user input
 func (m *ChallengeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		// if challenge is answered correctly, completion of category is 100%
-		// and user goes to next challenge, category explanation is shown
-		if m.hasAnswered &&
-			m.isCorrect &&
-			key.Matches(msg, keys.Next) &&
-			m.gameState.ShouldShowVulnerabilityExplanation(m.gameState.GetCurrentCategory()) {
-			explanationView := NewExplanationView(m.gameState, m.challenge, m.width, m.height, m.sourceMenu, true)
-			return explanationView, explanationView.Init()
-		} else if m.hasAnswered &&
-			m.isCorrect &&
-			key.Matches(msg, keys.Next) &&
-			m.gameState.MoveToNextChallenge() {
-			challenge := m.gameState.GetCurrentChallenge()
-			challengeView := NewChallengeView(m.gameState, challenge, m.width, m.height, MainMenu)
-			return challengeView, challengeView.Init()
+		// Handle challenge completion navigation
+		if m.hasAnswered && m.isCorrect && key.Matches(msg, keys.Next) {
+			if m.gameState.ShouldShowVulnerabilityExplanation(m.gameState.GetCurrentCategory()) {
+				explanationView := NewExplanationView(m.gameState, m.challenge, m.width, m.height, m.sourceMenu, true)
+				return explanationView, explanationView.Init()
+			} else if m.gameState.MoveToNextChallenge() {
+				challenge := m.gameState.GetCurrentChallenge()
+				challengeView := NewChallengeView(m.gameState, challenge, m.width, m.height, MainMenu)
+				return challengeView, challengeView.Init()
+			}
 		}
 
 		switch {
@@ -252,7 +337,9 @@ func (m *ChallengeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case key.Matches(msg, keys.Help):
-			m.helpModel.ShowAll = !m.helpModel.ShowAll
+			m.showHelp = !m.showHelp
+			m.updateViewportDimensions()
+			m.updateContent()
 
 		case key.Matches(msg, keys.ShowHint):
 			m.showHint = !m.showHint
@@ -261,46 +348,27 @@ func (m *ChallengeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, keys.Up):
 			if m.cursor > 0 && (!m.hasAnswered || !m.isCorrect) {
 				m.cursor--
-
 				if m.hasAnswered && !m.isCorrect {
 					m.hasAnswered = false
 					m.result = ""
 				}
 				m.updateContent()
-
-				// Find the cursor position in the content and scroll to it
-				cursorPos := strings.Index(m.contentStr, "> ")
-				if cursorPos > -1 {
-					linesBefore := strings.Count(m.contentStr[:cursorPos], "\n")
-					if linesBefore > m.viewport.Height/2 {
-						m.viewport.SetYOffset(linesBefore - m.viewport.Height/2)
-					}
-				}
 			}
 
 		case key.Matches(msg, keys.Down):
 			if m.cursor < len(m.challenge.Options)-1 && (!m.hasAnswered || !m.isCorrect) {
 				m.cursor++
-				// Reset the result message for another try
 				if m.hasAnswered && !m.isCorrect {
 					m.hasAnswered = false
 					m.result = ""
 				}
 				m.updateContent()
-
-				cursorPos := strings.Index(m.contentStr, "> ")
-				if cursorPos > -1 {
-					linesBefore := strings.Count(m.contentStr[:cursorPos], "\n")
-
-					// If cursor is below visible area, scroll down
-					if linesBefore >= m.viewport.YOffset+m.viewport.Height {
-						m.viewport.SetYOffset(linesBefore - 3) // Show a few lines of context
-					}
-				}
 			}
 
 		case key.Matches(msg, keys.ScrollUp):
-			m.viewport.LineUp(1)
+			if m.viewport.YOffset > 0 {
+				m.viewport.LineUp(1)
+			}
 
 		case key.Matches(msg, keys.ScrollDown):
 			m.viewport.LineDown(1)
@@ -309,6 +377,7 @@ func (m *ChallengeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.hasAnswered = true
 			selectedOption := m.challenge.Options[m.cursor]
 			currentCategory := m.gameState.GetCurrentCategory()
+
 			if selectedOption == m.challenge.CorrectAnswer {
 				m.isCorrect = true
 				m.result = "✓ Correct! You've identified the vulnerability."
@@ -327,12 +396,8 @@ func (m *ChallengeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		m.height = msg.Height
 
-		// Update viewport size
-		viewportHeight := max(m.height-4, 5)
-		m.viewport.Width = msg.Width
-		m.viewport.Height = viewportHeight
+		m.updateViewportDimensions()
 
-		// Regenerate content for new dimensions
 		m.updateContent()
 	}
 
@@ -343,26 +408,50 @@ func (m *ChallengeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *ChallengeView) View() string {
 	var b strings.Builder
-
 	b.WriteString(m.viewport.View())
 
 	hasScroll := m.viewport.YOffset > 0 ||
 		m.viewport.YOffset+m.viewport.Height < strings.Count(m.contentStr, "\n")+1
 
-	// Help section
-	helpText := m.helpModel.View(keys)
-	if !m.helpModel.ShowAll {
-		helpText = helpHintStyle.Render("Press ? for help")
-		if hasScroll {
-			helpText += " | j/k to scroll"
+	// Always ensure there's at least a minimal help text visible
+	if m.height < 15 {
+		// for very small terminals
+		helpText := "?:help"
+		if m.showHelp {
+			helpText = "↑/↓:nav esc:back ?:hide"
+		}
+		b.WriteString(helpHintStyle.Render(helpText))
+	} else if m.height < 20 {
+		if m.showHelp {
+			// simplified help view with just the essential controls
+			helpText := "↑/↓:nav | enter:select | esc:back | ?:hide"
+			b.WriteString(helpHintStyle.Render(helpText))
+		} else {
+			helpText := "? for help | ↑/↓ nav"
+			if hasScroll {
+				helpText += " | j/k scroll"
+			}
+			b.WriteString(helpHintStyle.Render(helpText))
+		}
+	} else {
+		// Normal help for regular sized terminals
+		b.WriteString("\n")
+
+		// The help text
+		if m.showHelp {
+			b.WriteString(m.help.View(MenuKeys))
+		} else {
+			helpText := "Press ? for help | ↑/↓ to navigate"
+			if hasScroll {
+				helpText += " | j/k to scroll"
+			}
+			b.WriteString(helpHintStyle.Render(helpText))
 		}
 	}
-	b.WriteString("\n" + helpStyle.Render(helpText))
 
 	return b.String()
 }
 
-// --- helpers ---
 func (k keyMap) ShortHelp() []key.Binding {
 	return []key.Binding{k.Help, k.Quit}
 }

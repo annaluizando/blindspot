@@ -5,6 +5,7 @@ import (
 	"blindspot/internal/game"
 	"blindspot/internal/ui"
 	"log"
+	"strings"
 )
 
 type Runner struct {
@@ -25,7 +26,7 @@ func (r *Runner) Run() {
 
 	r.configureGameState(gameState)
 
-	if r.config.WasFlagChanged("difficulty") {
+	if r.config.WasFlagChanged("difficulty") || r.config.WasFlagChanged("category") {
 		program, err := ui.InitializeUIWithChallenge(gameState)
 		if err != nil {
 			log.Fatal("Error initializing UI: ", err)
@@ -61,6 +62,20 @@ func (r *Runner) configureGameState(gameState *game.GameState) {
 		}
 	}
 
+	if r.config.WasFlagChanged("category") && r.config.Category != "" {
+		gameState.Settings.GameMode = "category"
+		gameState.UseRandomizedOrder = false
+
+		categoryIndex := findCategoryIndex(gameState, r.config.Category)
+		if categoryIndex >= 0 {
+			gameState.CurrentCategoryIdx = categoryIndex
+			gameState.CurrentChallengeIdx = 0
+			gameState.Progress.CurrentCategoryIdx = categoryIndex
+			gameState.Progress.CurrentChallengeIdx = 0
+			gameState.SaveProgress()
+		}
+	}
+
 	gameState.SaveSettings()
 }
 
@@ -87,4 +102,16 @@ func filterChallengesByDifficulty(allChallenges []challenges.Challenge, level in
 	}
 
 	return filteredChallenges
+}
+
+func findCategoryIndex(gs *game.GameState, categoryName string) int {
+	categoryName = strings.ToLower(categoryName)
+
+	for i, set := range gs.ChallengeSets {
+		if strings.ToLower(set.Category) == categoryName {
+			return i
+		}
+	}
+
+	return -1 // Not found
 }

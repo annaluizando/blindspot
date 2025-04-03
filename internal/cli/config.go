@@ -2,6 +2,7 @@ package cli
 
 type Config struct {
 	Difficulty int
+	Category   string
 
 	flagsChanged map[string]bool
 }
@@ -9,6 +10,7 @@ type Config struct {
 func NewConfig() *Config {
 	return &Config{
 		Difficulty:   0,
+		Category:     "",
 		flagsChanged: make(map[string]bool),
 	}
 }
@@ -20,6 +22,10 @@ func (c *Config) SetDifficulty(level int) {
 		level = 2
 	}
 	c.Difficulty = level
+}
+
+func (c *Config) SetCategory(category string) {
+	c.Category = category
 }
 
 func (c *Config) SetFlagChanged(flag string, changed bool) {

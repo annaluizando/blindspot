@@ -100,12 +100,6 @@ var hintStyle = lipgloss.NewStyle().
 	BorderStyle(lipgloss.RoundedBorder()).
 	BorderForeground(accentColor)
 
-// Style for help text at bottom
-var helpStyle = lipgloss.NewStyle().
-	Foreground(lipgloss.Color("#888888")). // Gray
-	Padding(1, 0, 0, 0)
-
-// Style for help text hint
 var helpHintStyle = lipgloss.NewStyle().
 	Foreground(mutedColor).
 	Italic(true)

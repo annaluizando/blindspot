@@ -102,3 +102,17 @@ func LoadChallenges() ([]ChallengeSet, error) {
 
 	return challengeData.ChallengeSets, nil
 }
+
+func GetChallengesCategories() ([]string, error) {
+	challengeSets, err := LoadChallenges()
+	if err != nil {
+		return nil, err
+	}
+
+	var categories []string
+	for _, challenge := range challengeSets {
+		categories = append(categories, challenge.Category)
+	}
+
+	return categories, nil
+}
