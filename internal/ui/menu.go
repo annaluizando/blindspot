@@ -165,46 +165,6 @@ func (m *MenuView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, MenuKeys.Quit):
 			return m, tea.Quit
 
-		case key.Matches(msg, MenuKeys.Up):
-			if m.cursor > 0 {
-				m.cursor--
-				m.updateContent()
-				// Try to keep the cursor visible
-				cursorPos := strings.Index(m.contentStr, ">")
-				if cursorPos > -1 {
-					m.viewport.SetYOffset(0) // Reset to top first
-					linesBefore := strings.Count(m.contentStr[:cursorPos], "\n")
-					if linesBefore > m.viewport.Height/2 {
-						m.viewport.SetYOffset(linesBefore - m.viewport.Height/2)
-					}
-				}
-			}
-
-		case key.Matches(msg, MenuKeys.Down):
-			if m.cursor < len(m.items)-1 {
-				m.cursor++
-				m.updateContent()
-				// Try to keep the cursor visible
-				cursorPos := strings.Index(m.contentStr, ">")
-				if cursorPos > -1 {
-					m.viewport.GotoTop()
-					linesBefore := strings.Count(m.contentStr[:cursorPos], "\n")
-					if linesBefore > m.viewport.Height/2 {
-						m.viewport.SetYOffset(linesBefore - m.viewport.Height/2)
-					}
-				}
-			}
-
-		case key.Matches(msg, MenuKeys.ScrollUp):
-			m.viewport.LineUp(1)
-
-		case key.Matches(msg, MenuKeys.ScrollDown):
-			m.viewport.LineDown(1)
-
-		case key.Matches(msg, MenuKeys.Help):
-			m.showHelp = !m.showHelp
-			m.updateContent()
-
 		case key.Matches(msg, MenuKeys.Back):
 			if m.type_ == CategoryMenu {
 				newMenu := NewMainMenu(m.gameState, m.width, m.height)
@@ -223,6 +183,46 @@ func (m *MenuView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				newMenu := NewMainMenu(m.gameState, m.width, m.height)
 				return newMenu, nil
 			}
+
+		case key.Matches(msg, MenuKeys.Help):
+			m.showHelp = !m.showHelp
+			m.updateContent()
+
+		case key.Matches(msg, MenuKeys.Up):
+			if m.cursor > 0 {
+				m.cursor--
+				m.updateContent()
+				// keep the cursor visible
+				cursorPos := strings.Index(m.contentStr, ">")
+				if cursorPos > -1 {
+					m.viewport.SetYOffset(0) // Reset to top first
+					linesBefore := strings.Count(m.contentStr[:cursorPos], "\n")
+					if linesBefore > m.viewport.Height/2 {
+						m.viewport.SetYOffset(linesBefore - m.viewport.Height/2)
+					}
+				}
+			}
+
+		case key.Matches(msg, MenuKeys.Down):
+			if m.cursor < len(m.items)-1 {
+				m.cursor++
+				m.updateContent()
+				// keep the cursor visible
+				cursorPos := strings.Index(m.contentStr, ">")
+				if cursorPos > -1 {
+					m.viewport.GotoTop()
+					linesBefore := strings.Count(m.contentStr[:cursorPos], "\n")
+					if linesBefore > m.viewport.Height/2 {
+						m.viewport.SetYOffset(linesBefore - m.viewport.Height/2)
+					}
+				}
+			}
+
+		case key.Matches(msg, MenuKeys.ScrollUp):
+			m.viewport.LineUp(1)
+
+		case key.Matches(msg, MenuKeys.ScrollDown):
+			m.viewport.LineDown(1)
 
 		case key.Matches(msg, MenuKeys.Select):
 			if m.type_ == MainMenu {
@@ -314,15 +314,8 @@ func (m *MenuView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
+
 		m.updateContent()
-		m.viewport.Width = msg.Width
-		viewportHeight := m.height - 1
-		if m.showHelp {
-			viewportHeight -= 4
-		} else {
-			viewportHeight -= 1
-		}
-		m.viewport.Height = viewportHeight
 	}
 
 	// Handle viewport updates
@@ -332,18 +325,7 @@ func (m *MenuView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *MenuView) View() string {
 	var b strings.Builder
-
-	// Show the viewport content
 	b.WriteString(m.viewport.View())
-
-	// Add scroll status indicator - check if we can scroll
-	hasScroll := m.viewport.YOffset > 0 || m.viewport.YOffset+m.viewport.Height < strings.Count(m.contentStr, "\n")+1
-	if hasScroll {
-		scrollInfo := fmt.Sprintf(" Line %d of %d ",
-			m.viewport.YOffset+1,
-			strings.Count(m.contentStr, "\n")+1)
-		b.WriteString("\n" + dimStyle.Render("j/k to scroll, currently at") + scrollInfo)
-	}
 
 	// Help
 	if m.showHelp {
@@ -352,9 +334,6 @@ func (m *MenuView) View() string {
 		helpText := "Press ? for help | ↑/↓ to navigate | j/k to scroll"
 		if m.width < 60 {
 			helpText = "? for help | ↑/↓ nav | j/k scroll"
-		}
-		if !hasScroll {
-			helpText = strings.Replace(helpText, " | j/k to scroll", "", 1)
 		}
 		b.WriteString("\n" + helpHintStyle.Render(helpText))
 	}
