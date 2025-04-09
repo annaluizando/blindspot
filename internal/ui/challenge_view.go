@@ -93,18 +93,6 @@ type ChallengeView struct {
 }
 
 func NewChallengeView(gs *game.GameState, challenge challenges.Challenge, width, height int, source MenuType) *ChallengeView {
-	if width < 40 {
-		width = 80 // Default reasonable width
-	}
-	if height < 15 {
-		height = 24 // Default reasonable height
-	}
-
-	helpHeight := 2
-
-	// Calculate initial viewport height, ensuring minimum space for options
-	viewportHeight := max(height-helpHeight, 15)
-
 	challengeView := &ChallengeView{
 		gameState:   gs,
 		challenge:   challenge,
@@ -118,58 +106,26 @@ func NewChallengeView(gs *game.GameState, challenge challenges.Challenge, width,
 		isCorrect:   false,
 		quizOptions: challenge.Options,
 		sourceMenu:  source,
-		helpHeight:  helpHeight,
 	}
 
-	challengeView.viewport = viewport.New(width, viewportHeight)
-	challengeView.viewport.MouseWheelEnabled = true
-
 	challengeView.updateContent()
-
 	return challengeView
 }
 
-func (m *ChallengeView) calculateHelpHeight() int {
-	if m.showHelp {
-		// Full help view needs more space - count actual lines in help view
-		helpText := m.help.View(MenuKeys)
-		return strings.Count(helpText, "\n") + 2 // Add a bit of padding
-	}
-	// Just basic help line needs minimal space
-	return 2 // One for the help text, one for spacing
-}
-
 func (m *ChallengeView) updateViewportDimensions() {
-	// Update the help height based on terminal size
-	if m.height < 15 {
-		// Ultra-compact for very small terminals
-		m.helpHeight = 1 // Just one line for minimal help
-	} else if m.height < 20 {
-		// Compact for small terminals
-		m.helpHeight = 1
-		if m.showHelp {
-			// If showing help on small screen, give it a bit more space
-			m.helpHeight = 2
-		}
-	} else {
-		// Normal terminals - calculate help height normally
-		m.helpHeight = m.calculateHelpHeight()
+	m.helpHeight = 1
+	if m.showHelp {
+		// If showing help on small screen, give it a bit more space
+		m.helpHeight = 2
 	}
 
 	// Minimum height required to show at least 3 options plus question
-	minimumOptionsHeight := 5 // 1 for question + 3 options + 1 buffer
+	minimumOptionsHeight := 8 // 1 for question + 3 options + 1 buffer
 
 	// Calculate viewport height ensuring there's enough room for options
 	viewportHeight := max(m.height-m.helpHeight, minimumOptionsHeight)
 
-	// For very small windows, prioritize content more aggressively
-	if m.height < 12 {
-		// Absolute minimum for help (1 line) regardless of help state
-		m.helpHeight = 1
-		viewportHeight = m.height - 1
-	}
-
-	m.viewport.Height = viewportHeight
+	m.viewport.Height = viewportHeight - 2
 	m.viewport.Width = m.width
 }
 
@@ -300,6 +256,7 @@ func (m *ChallengeView) updateContent() {
 }
 
 func (m *ChallengeView) Init() tea.Cmd {
+	m.updateContent()
 	return tea.Sequence(
 		func() tea.Msg {
 			return tea.WindowSizeMsg{
@@ -413,54 +370,33 @@ func (m *ChallengeView) View() string {
 	hasScroll := m.viewport.YOffset > 0 ||
 		m.viewport.YOffset+m.viewport.Height < strings.Count(m.contentStr, "\n")+1
 
-	// Always ensure there's at least a minimal help text visible
-	if m.height < 15 {
-		// for very small terminals
-		helpText := "?:help"
-		if m.showHelp {
-			helpText = "↑/↓:nav esc:back ?:hide"
+	b.WriteString("\n")
+
+	// The help text
+	if m.showHelp {
+		b.WriteString(m.help.View(MenuKeys))
+	} else {
+		helpText := "Press ? for help | ↑/↓ to navigate"
+		if hasScroll {
+			helpText += " | j/k to scroll"
 		}
 		b.WriteString(helpHintStyle.Render(helpText))
-	} else if m.height < 20 {
-		if m.showHelp {
-			// simplified help view with just the essential controls
-			helpText := "↑/↓:nav | enter:select | esc:back | ?:hide"
-			b.WriteString(helpHintStyle.Render(helpText))
-		} else {
-			helpText := "? for help | ↑/↓ nav"
-			if hasScroll {
-				helpText += " | j/k scroll"
-			}
-			b.WriteString(helpHintStyle.Render(helpText))
-		}
-	} else {
-		// Normal help for regular sized terminals
-		b.WriteString("\n")
-
-		// The help text
-		if m.showHelp {
-			b.WriteString(m.help.View(MenuKeys))
-		} else {
-			helpText := "Press ? for help | ↑/↓ to navigate"
-			if hasScroll {
-				helpText += " | j/k to scroll"
-			}
-			b.WriteString(helpHintStyle.Render(helpText))
-		}
 	}
 
 	return b.String()
 }
 
+// ----helpers----
 func (k keyMap) ShortHelp() []key.Binding {
 	return []key.Binding{k.Help, k.Quit}
 }
 
 func (k keyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
-		{k.Up, k.Down, k.Select},
+		{k.Up, k.Down},
 		{k.ScrollUp, k.ScrollDown},
-		{k.Back, k.Help, k.Quit},
+		{k.Select, k.Back},
+		{k.Help, k.Quit},
 		{k.ShowHint, k.Next},
 	}
 }

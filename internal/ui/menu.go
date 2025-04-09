@@ -681,6 +681,7 @@ func NewSettingsMenu(gs *game.GameState, width, height int) *MenuView {
 	return menu
 }
 
+// ---- helpers ----
 func (k MenuKeyMap) ShortHelp() []key.Binding {
 	return []key.Binding{k.Help, k.Quit}
 }
