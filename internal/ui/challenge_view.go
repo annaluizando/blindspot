@@ -135,11 +135,11 @@ func (m *ChallengeView) updateContent() {
 	difficultyText := ""
 	switch m.challenge.Difficulty {
 	case challenges.Beginner:
-		difficultyText = difficultyStyle["beginner"].Render("[Beginner]")
+		difficultyText = difficultyStyle["beginner"].Render("> [Beginner]")
 	case challenges.Intermediate:
-		difficultyText = difficultyStyle["intermediate"].Render("[Intermediate]")
+		difficultyText = difficultyStyle["intermediate"].Render("> [Intermediate]")
 	case challenges.Advanced:
-		difficultyText = difficultyStyle["advanced"].Render("[Advanced]")
+		difficultyText = difficultyStyle["advanced"].Render("> [Advanced]")
 	}
 
 	b.WriteString(difficultyText + "\n\n")
@@ -147,28 +147,28 @@ func (m *ChallengeView) updateContent() {
 	showCategory := m.gameState.Settings.ShowVulnerabilityNames || (m.hasAnswered && m.isCorrect)
 
 	if showCategory {
-		b.WriteString(subtitleStyle.Render("CHALLENGE NAME:") + "\n")
 		b.WriteString(titleStyle.Render(m.challenge.Title) + "\n")
 
 		categoryHeader := fmt.Sprintf(" CATEGORY: %s", m.gameState.GetCurrentCategory())
 		b.WriteString(categoryStyle.Render(categoryHeader) + "\n\n")
 	}
 
-	// for visual clarity
-	separator := strings.Repeat("─", m.width/2)
-	b.WriteString(subtleStyle.Render(separator) + "\n\n")
-
 	language := ""
 	if len(m.challenge.Lang) > 0 {
-		lang := utils.GetLanguageFromExtension(m.challenge.Lang)
+		lang := utils.GetLanguageFromChallenge(m.challenge.Lang)
 		if lang != "" {
 			language = lang
 		}
 	}
 
+	separator := strings.Repeat("─", m.width)
+	b.WriteString(subtleStyle.Render(separator) + "\n\n")
+
 	highlightedCode := utils.HighlightCode(m.challenge.Code, language)
 
-	b.WriteString(codeBoxStyle.Render(highlightedCode) + "\n\n")
+	b.WriteString(codeBoxStyle.Render(highlightedCode) + "\n")
+
+	b.WriteString(subtleStyle.Render(separator) + "\n\n")
 
 	b.WriteString(descStyle.Render("What vulnerability is in this code?") + "\n\n")
 

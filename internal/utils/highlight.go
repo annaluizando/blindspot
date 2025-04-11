@@ -56,10 +56,10 @@ func HighlightCode(code string, language string) string {
 	return buf.String()
 }
 
-func GetLanguageFromExtension(filename string) string {
+func GetLanguageFromChallenge(filename string) string {
 	parts := strings.Split(filename, ".")
 	if len(parts) < 2 {
-		return "" // No extension
+		return ""
 	}
 
 	ext := parts[len(parts)-1]
@@ -87,7 +87,7 @@ func GetLanguageFromExtension(filename string) string {
 	case "sh", "bash":
 		return "bash"
 	default:
-		return "" // Unknown extension
+		return ""
 	}
 }
 

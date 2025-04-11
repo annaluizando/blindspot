@@ -29,7 +29,7 @@ challengeSets:
           - "The endpoint doesn't use HTTPS"
         correctAnswer: "The endpoint doesn't validate if the user is authorized to access the document"
         hint: "The function retrieves and returns any document without checking if the current user has permission to access it."
-        lang: "Go"
+        lang: "go"
 
       - id: "broken-access-control-2"
         title: "Missing Function Level Access Control"
@@ -55,7 +55,7 @@ challengeSets:
           - "The router isn't using HTTPS for admin endpoints"
         correctAnswer: "The router doesn't apply authentication/authorization middleware"
         hint: "How does the application verify that only administrators can access these endpoints?"
-        lang: "Go"
+        lang: "go"
 
   - category: "Cryptographic Failures"
     id: "cryptographic-failures"
@@ -85,7 +85,7 @@ challengeSets:
           - "The database query is vulnerable to injection"
         correctAnswer: "The function uses MD5, which is not secure for password hashing"
         hint: "Look at the algorithm used for storing passwords. Is it suitable for this purpose?"
-        lang: "Go"
+        lang: "go"
 
       - id: "crypto-2"
         title: "Hardcoded Encryption Key"
@@ -123,7 +123,7 @@ challengeSets:
           - "The AES cipher is used in an insecure mode"
         correctAnswer: "The encryption key is hardcoded in the source code"
         hint: "Where is the encryption key stored and how is it managed?"
-        lang: "Go"
+        lang: "go"
 
   - category: "Injection"
     id: "injection"
@@ -149,7 +149,7 @@ challengeSets:
           - "The function doesn't check for empty inputs"
         correctAnswer: "The function doesn't escape special characters in the input"
         hint: "Look at how the query string is constructed. What happens if the username or password contains SQL syntax?"
-        lang: "PHP"
+        lang: "php"
 
       - id: "sql-injection-2"
         title: "SQL Injection in a Web Handler"
@@ -178,7 +178,7 @@ challengeSets:
           - "The handler sends sensitive information without encryption"
         correctAnswer: "The handler doesn't sanitize user input and is vulnerable to SQL injection"
         hint: "Notice how the userID parameter is included in the SQL query."
-        lang: "Go"
+        lang: "go"
 
       - id: "command-injection-1"
         title: "Command Injection in Exec"
@@ -200,7 +200,7 @@ challengeSets:
           - "The output isn't properly sanitized before returning"
         correctAnswer: "The function is vulnerable to command injection"
         hint: "Think about what happens if serverAddress contains special shell characters."
-        lang: "Go"
+        lang: "go"
 
   - category: "Insecure Design"
     id: "insecure-design"
@@ -253,7 +253,7 @@ challengeSets:
           - "All of the above"
         correctAnswer: "All of the above"
         hint: "Consider the entire password recovery flow. What would make this more secure?"
-        lang: "Go"
+        lang: "go"
 
   - category: "Security Misconfiguration"
     id: "security-misconfiguration"
@@ -290,7 +290,7 @@ challengeSets:
           - "The function doesn't close the database connection"
         correctAnswer: "The function returns detailed error messages to the client"
         hint: "What information might be exposed in the error message that could help an attacker?"
-        lang: "Go"
+        lang: "go"
 
   - category: "Vulnerable and Outdated Components"
     id: "vulnerable-outdated-components"
@@ -350,7 +350,7 @@ challengeSets:
           - "The function doesn't check if the user exists"
         correctAnswer: "The session token is predictable and can be guessed"
         hint: "How is the session token generated? Is there any randomness?"
-        lang: "Go"
+        lang: "go"
 
       - id: "auth-2"
         title: "Weak Password Policy"
@@ -372,7 +372,7 @@ challengeSets:
           - "All of the above"
         correctAnswer: "All of the above"
         hint: "What makes a strong password policy?"
-        lang: "Javascript"
+        lang: "javascript"
 
   - category: "Software and Data Integrity Failures"
     id: "software-and-data-integrity-failures"
@@ -411,7 +411,7 @@ challengeSets:
           - "The function doesn't handle errors properly"
         correctAnswer: "The function accepts any JSON without verification"
         hint: "What prevents an attacker from modifying the cookie to inject unexpected values?"
-        lang: "Go"
+        lang: "go"
 
   - category: "Security Logging and Monitoring Failures"
     id: "security-logging-and-monitoring-failures"
@@ -449,7 +449,7 @@ challengeSets:
           - "The function doesn't sanitize inputs"
         correctAnswer: "The function doesn't log failed login attempts"
         hint: "How would you detect brute force attacks or compromised accounts?"
-        lang: "Go"
+        lang: "go"
 
   - category: "Server-Side Request Forgery"
     id: "ssrf"
@@ -489,4 +489,4 @@ challengeSets:
           - "The function doesn't check the response content type"
         correctAnswer: "The function doesn't validate or sanitize the URL parameter"
         hint: "What happens if the URL points to an internal network resource?"
-        lang: "Go"
+        lang: "go"

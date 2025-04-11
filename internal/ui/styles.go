@@ -51,8 +51,6 @@ var descriptionStyle = lipgloss.NewStyle().
 
 // code display
 var codeBoxStyle = lipgloss.NewStyle().
-	BorderStyle(lipgloss.RoundedBorder()).
-	BorderForeground(secondaryColor).
 	Padding(1, 5).
 	MarginBottom(1).
 	MaxWidth(100)
