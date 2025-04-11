@@ -9,17 +9,14 @@ challengeSets:
         difficulty: 0 # Beginner
         code: |
           func GetUserDocument(w http.ResponseWriter, r *http.Request) {
-              // Get document ID from URL
               docID := r.URL.Query().Get("document_id")
 
-              // Fetch document from database
               doc, err := db.FetchDocument(docID)
               if err != nil {
                   http.Error(w, "Document not found", http.StatusNotFound)
                   return
               }
 
-              // Return document as JSON
               json.NewEncoder(w).Encode(doc)
           }
         options:
@@ -36,16 +33,13 @@ challengeSets:
         description: "This admin panel endpoint contains a vulnerability. Can you spot it?"
         difficulty: 1 # Intermediate
         code: |
-          // Admin panel router setup
           func SetupAdminRoutes(router *mux.Router) {
               admin := router.PathPrefix("/admin").Subrouter()
 
-              // Admin endpoints
               admin.HandleFunc("/users", ListAllUsers)
               admin.HandleFunc("/system-config", UpdateSystemConfig)
               admin.HandleFunc("/delete-user/{id}", DeleteUser)
 
-              // Admin dashboard
               admin.HandleFunc("/dashboard", ShowAdminDashboard)
           }
         options:
@@ -67,12 +61,10 @@ challengeSets:
         difficulty: 0 # Beginner
         code: |
           func registerUser(username, password string) error {
-              // Hash the password with MD5
               hasher := md5.New()
               hasher.Write([]byte(password))
               hashedPassword := hex.EncodeToString(hasher.Sum(nil))
 
-              // Store in database
               _, err := db.Exec(
                   "INSERT INTO users (username, password) VALUES (?, ?)",
                   username, hashedPassword)
@@ -93,22 +85,18 @@ challengeSets:
         difficulty: 1 # Intermediate
         code: |
           func encryptData(data []byte) ([]byte, error) {
-              // AES encryption key (16 bytes)
               key := []byte("SuperS3cretKey!!")
 
-              // Create cipher block
               block, err := aes.NewCipher(key)
               if err != nil {
                   return nil, err
               }
 
-              // Generate random IV
               iv := make([]byte, aes.BlockSize)
               if _, err := io.ReadFull(rand.Reader, iv); err != nil {
                   return nil, err
               }
 
-              // Encrypt data
               ciphertext := make([]byte, aes.BlockSize+len(data))
               copy(ciphertext[:aes.BlockSize], iv)
               stream := cipher.NewCFBEncrypter(block, iv)
@@ -138,9 +126,9 @@ challengeSets:
             $query = "SELECT * FROM users WHERE username='" . $username . "' AND password='" . $password . "'";
             $result = mysqli_query($connection, $query);
             if(mysqli_num_rows($result) > 0) {
-              return true; // Login successful
+              return true;
             }
-            return false; // Login failed
+            return false;
           }
         options:
           - "The function doesn't escape special characters in the input"
@@ -159,12 +147,10 @@ challengeSets:
           func handleUserProfile(w http.ResponseWriter, r *http.Request) {
               userID := r.URL.Query().Get("id")
 
-              // Get user data
               db, _ := sql.Open("mysql", "user:password@/dbname")
               query := fmt.Sprintf("SELECT username, email FROM users WHERE id = %s", userID)
               rows, _ := db.Query(query)
 
-              // Display user data
               var username, email string
               if rows.Next() {
                   rows.Scan(&username, &email)
@@ -217,28 +203,22 @@ challengeSets:
                   return
               }
 
-              // Get email from form
               email := r.FormValue("email")
 
-              // Find user
               user, err := db.FindUserByEmail(email)
               if err != nil {
                   http.Error(w, "User not found", http.StatusNotFound)
                   return
               }
 
-              // Generate security question response
               securityQuestion := user.SecurityQuestion
               userAnswer := r.FormValue("answer")
 
-              // Check answer
               if userAnswer == user.SecurityAnswer {
-                  // Reset password
                   newPassword := generateRandomPassword()
                   user.SetPassword(newPassword)
                   user.Save()
 
-                  // Send email with new password
                   sendPasswordEmail(user.Email, newPassword)
 
                   http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -269,19 +249,14 @@ challengeSets:
               dbPass := os.Getenv("DB_PASS")
               dbHost := os.Getenv("DB_HOST")
 
-              // Create connection string
               connStr := fmt.Sprintf("postgres://%s:%s@%s/app_database",
                   dbUser, dbPass, dbHost)
 
-              // Connect to database
               db, err := sql.Open("postgres", connStr)
               if err != nil {
-                  // Send detailed error to client
                   http.Error(w, "Database connection error: "+err.Error(), http.StatusInternalServerError)
                   return
               }
-
-              // Continue with database operations...
           }
         options:
           - "The function stores database credentials in environment variables"
@@ -334,11 +309,9 @@ challengeSets:
         difficulty: 1 # Intermediate
         code: |
           func createSession(userID int) string {
-              // Generate session token
               timestamp := time.Now().Unix()
               token := fmt.Sprintf("%d:%d", userID, timestamp)
 
-              // Store in sessions map
               sessions[token] = userID
 
               return token
@@ -356,9 +329,9 @@ challengeSets:
         title: "Weak Password Policy"
         description: "This password validation function has a security issue. What is it?"
         difficulty: 0 # Beginner
+        # too easy
         code: |
           function validatePassword(password) {
-              // Check password length
               if (password.length < 6) {
                   return false;
               }
@@ -384,19 +357,16 @@ challengeSets:
         difficulty: 1 # Intermediate
         code: |
           func loadUserPreferences(r *http.Request) map[string]interface{} {
-              // Get preferences cookie
               cookie, err := r.Cookie("user_prefs")
               if err != nil {
                   return map[string]interface{}{}
               }
 
-              // Decode base64
               decoded, err := base64.StdEncoding.DecodeString(cookie.Value)
               if err != nil {
                   return map[string]interface{}{}
               }
 
-              // Deserialize
               var prefs map[string]interface{}
               if err := json.Unmarshal(decoded, &prefs); err != nil {
                   return map[string]interface{}{}
@@ -437,7 +407,6 @@ challengeSets:
                   return
               }
 
-              // Create session and redirect to dashboard
               session := createSession(user.ID)
               setCookie(w, "session", session)
               http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
@@ -461,10 +430,8 @@ challengeSets:
         difficulty: 1 # Intermediate
         code: |
           func fetchExternalResource(w http.ResponseWriter, r *http.Request) {
-              // Get URL from request
               resourceURL := r.URL.Query().Get("url")
 
-              // Fetch resource
               resp, err := http.Get(resourceURL)
               if err != nil {
                   http.Error(w, "Failed to fetch resource", http.StatusInternalServerError)
@@ -472,14 +439,12 @@ challengeSets:
               }
               defer resp.Body.Close()
 
-              // Read response
               body, err := ioutil.ReadAll(resp.Body)
               if err != nil {
                   http.Error(w, "Failed to read resource", http.StatusInternalServerError)
                   return
               }
 
-              // Return content
               w.Write(body)
           }
         options:
