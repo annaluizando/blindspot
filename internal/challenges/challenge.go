@@ -35,6 +35,7 @@ type Challenge struct {
 	Hint          string          `yaml:"hint"`          // Optional hint for the user
 	Solution      string          `yaml:"solution"`      // For code fix: a sample correct solution
 	Lang          string          `yaml:"lang"`          // programming language in challenge's code
+	Explanation   string          `yaml:"explanation"`   // Explanation of why the correct answer is right
 }
 
 // group of related challenges

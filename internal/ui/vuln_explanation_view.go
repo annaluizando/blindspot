@@ -244,15 +244,13 @@ func (v *ExplanationView) updateContent() {
 // renders vulnerability explanation
 func (v *ExplanationView) View() string {
 	var b strings.Builder
-	// Render viewport content
 	b.WriteString(v.viewport.View())
 
 	hasScroll := v.viewport.YOffset > 0 || v.viewport.YOffset+v.viewport.Height < strings.Count(v.contentStr, "\n")+1
 	if hasScroll {
-		scrollInfo := fmt.Sprintf(" Line %d of %d ",
-			v.viewport.YOffset+1,
-			strings.Count(v.contentStr, "\n")+1)
-		b.WriteString("\n" + dimStyle.Render("j/k to scroll, currently at") + scrollInfo)
+		// v.viewport.YOffset+1, // current user line
+		// strings.Count(v.contentStr, "\n")+1) // total lines
+		b.WriteString("\n" + dimStyle.Render("j/k to scroll"))
 	}
 
 	// Help

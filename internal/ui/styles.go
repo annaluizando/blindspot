@@ -98,6 +98,11 @@ var hintStyle = lipgloss.NewStyle().
 	BorderStyle(lipgloss.RoundedBorder()).
 	BorderForeground(accentColor)
 
+var explanationStyle = lipgloss.NewStyle().
+	Foreground(accentColor).
+	Bold(true).
+	Padding(0, 1)
+
 var helpHintStyle = lipgloss.NewStyle().
 	Foreground(mutedColor).
 	Italic(true)

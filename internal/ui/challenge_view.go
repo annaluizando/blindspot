@@ -213,6 +213,12 @@ func (m *ChallengeView) updateContent() {
 		b.WriteString("\n" + m.resultStyle.Render(m.result) + "\n")
 
 		if m.isCorrect {
+			if m.challenge.Explanation != "" {
+				b.WriteString("\n" + explanationStyle.Render("💡 Why this is correct:") + "\n")
+				wrappedExplanation := utils.WrapText(m.challenge.Explanation, m.width)
+				b.WriteString(explanationTextStyle.Render(wrappedExplanation) + "\n")
+			}
+
 			b.WriteString("\n" + helpHintStyle.Render("Press 'Enter'/'N' to continue to next challenge"))
 		}
 	}
