@@ -4,42 +4,41 @@ challengeSets:
     description: "Access control enforces policies such that users cannot act outside of their intended permissions.\nFailures typically lead to unauthorized disclosure, modification, or destruction of data."
     challenges:
       - id: "broken-access-control-1"
-        title: "Insecure Direct Object Reference"
-        description: "This API endpoint has a security vulnerability. What is it?"
+        title: "Insecure Direct Object Reference (IDOR)"
+        description: "This API endpoint retrieves documents based on user input. What security vulnerability exists?"
         difficulty: 0 # Beginner
         code: |
-          func GetUserDocument(w http.ResponseWriter, r *http.Request) {
-              docID := r.URL.Query().Get("document_id")
-
-              doc, err := db.FetchDocument(docID)
-              if err != nil {
-                  http.Error(w, "Document not found", http.StatusNotFound)
-                  return
-              }
-
-              json.NewEncoder(w).Encode(doc)
-          }
+          @app.route('/api/documents/<int:doc_id>', methods=['GET'])
+          @login_required
+          def get_document(doc_id):
+              document = Document.query.get_or_404(doc_id)
+              return jsonify({
+                  'id': document.id,
+                  'title': document.title,
+                  'content': document.content,
+                  'owner_id': document.owner_id
+              })
         options:
           - "The endpoint doesn't validate if the user is authorized to access the document"
-          - "The endpoint doesn't sanitize the document_id parameter"
+          - "The endpoint doesn't sanitize the doc_id parameter"
           - "The endpoint doesn't check for CSRF tokens"
           - "The endpoint doesn't use HTTPS"
         correctAnswer: "The endpoint doesn't validate if the user is authorized to access the document"
         hint: "The function retrieves and returns any document without checking if the current user has permission to access it."
-        lang: "go"
+        explanation: "The endpoint uses @login_required to ensure the user is authenticated, but it doesn't verify if the authenticated user has permission to access the specific document. An attacker could access any document by simply changing the doc_id parameter, even if they don't own it. This is a classic IDOR (Insecure Direct Object Reference) vulnerability."
+        lang: "python"
 
       - id: "broken-access-control-2"
         title: "Missing Function Level Access Control"
-        description: "This admin panel endpoint contains a vulnerability. Can you spot it?"
+        description: "This router setup configures several admin endpoints. What security issue exists?"
         difficulty: 1 # Intermediate
         code: |
           func SetupAdminRoutes(router *mux.Router) {
               admin := router.PathPrefix("/admin").Subrouter()
-
+              
               admin.HandleFunc("/users", ListAllUsers)
               admin.HandleFunc("/system-config", UpdateSystemConfig)
               admin.HandleFunc("/delete-user/{id}", DeleteUser)
-
               admin.HandleFunc("/dashboard", ShowAdminDashboard)
           }
         options:
@@ -49,7 +48,39 @@ challengeSets:
           - "The router isn't using HTTPS for admin endpoints"
         correctAnswer: "The router doesn't apply authentication/authorization middleware"
         hint: "How does the application verify that only administrators can access these endpoints?"
+        explanation: "The router sets up admin endpoints but doesn't apply any middleware to verify that the requesting user is actually an administrator. Without authentication and authorization checks, anyone who knows the admin URL paths could potentially access sensitive administrative functions like listing all users, updating system configuration, or deleting user accounts."
         lang: "go"
+
+      - id: "broken-access-control-3"
+        title: "Directory Traversal via File Path"
+        description: "This function allows users to download files by specifying a filename. What security vulnerability exists?"
+        difficulty: 1 # Intermediate
+        code: |
+          @GetMapping("/download")
+          public ResponseEntity<Resource> downloadFile(@RequestParam String filename) {
+              try {
+                  Path filePath = Paths.get("/var/uploads/" + filename);
+                  Resource resource = new UrlResource(filePath.toUri());
+                  
+                  if (resource.exists()) {
+                      return ResponseEntity.ok()
+                          .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
+                          .body(resource);
+                  }
+              } catch (Exception e) {
+                  # Error handling
+              }
+              return ResponseEntity.notFound().build();
+          }
+        options:
+          - "The function doesn't validate file extensions"
+          - "The function is vulnerable to directory traversal attacks"
+          - "The function doesn't check file permissions"
+          - "The function doesn't sanitize the filename parameter"
+        correctAnswer: "The function is vulnerable to directory traversal attacks"
+        hint: "What happens if filename contains '../' sequences?"
+        explanation: "The function concatenates the user-provided filename directly to the base path without validation. An attacker can use '../' sequences to navigate outside the intended directory. For example, a filename like '../../../etc/passwd' would allow access to system files outside the uploads directory, potentially exposing sensitive information or allowing unauthorized file access."
+        lang: "java"
 
   - category: "Cryptographic Failures"
     id: "cryptographic-failures"
@@ -57,18 +88,18 @@ challengeSets:
     challenges:
       - id: "crypto-1"
         title: "Insecure Password Storage"
-        description: "What's wrong with this password handling code?"
+        description: "This function handles user registration and password storage. What security issue exists?"
         difficulty: 0 # Beginner
         code: |
-          func registerUser(username, password string) error {
-              hasher := md5.New()
-              hasher.Write([]byte(password))
-              hashedPassword := hex.EncodeToString(hasher.Sum(nil))
-
-              _, err := db.Exec(
-                  "INSERT INTO users (username, password) VALUES (?, ?)",
-                  username, hashedPassword)
-              return err
+          function registerUser(username, password) {
+              const hashedPassword = crypto.createHash('md5').update(password).digest('hex');
+              
+              const user = new User({
+                  username: username,
+                  password: hashedPassword
+              });
+              
+              return user.save();
           }
         options:
           - "The function doesn't validate the password strength"
@@ -77,33 +108,21 @@ challengeSets:
           - "The database query is vulnerable to injection"
         correctAnswer: "The function uses MD5, which is not secure for password hashing"
         hint: "Look at the algorithm used for storing passwords. Is it suitable for this purpose?"
-        lang: "go"
+        explanation: "MD5 is a cryptographic hash function that is cryptographically broken and unsuitable for password hashing. It's vulnerable to collision attacks and rainbow table attacks. Additionally, MD5 is extremely fast, making brute force attacks much more feasible. Modern applications should use dedicated password hashing algorithms like bcrypt, Argon2, or PBKDF2 which are designed to be slow and include salt."
+        lang: "javascript"
 
       - id: "crypto-2"
         title: "Hardcoded Encryption Key"
-        description: "This encryption function has a serious security issue. What is it?"
+        description: "This function encrypts data using AES. What security vulnerability exists?"
         difficulty: 1 # Intermediate
         code: |
-          func encryptData(data []byte) ([]byte, error) {
-              key := []byte("SuperS3cretKey!!")
-
-              block, err := aes.NewCipher(key)
-              if err != nil {
-                  return nil, err
-              }
-
-              iv := make([]byte, aes.BlockSize)
-              if _, err := io.ReadFull(rand.Reader, iv); err != nil {
-                  return nil, err
-              }
-
-              ciphertext := make([]byte, aes.BlockSize+len(data))
-              copy(ciphertext[:aes.BlockSize], iv)
-              stream := cipher.NewCFBEncrypter(block, iv)
-              stream.XORKeyStream(ciphertext[aes.BlockSize:], data)
-
-              return ciphertext, nil
-          }
+          def encrypt_data(data):
+              key = b"SuperS3cretKey12345"  # 16 bytes for AES-128
+              
+              cipher = AES.new(key, AES.MODE_CBC)
+              ct_bytes = cipher.encrypt(pad(data, AES.block_size))
+              
+              return cipher.iv + ct_bytes
         options:
           - "The function isn't using authenticated encryption"
           - "The initialization vector (IV) is predictable"
@@ -111,7 +130,30 @@ challengeSets:
           - "The AES cipher is used in an insecure mode"
         correctAnswer: "The encryption key is hardcoded in the source code"
         hint: "Where is the encryption key stored and how is it managed?"
-        lang: "go"
+        explanation: "The encryption key is hardcoded directly in the source code, which is a serious security risk. If the source code is ever exposed (through version control, deployment, or reverse engineering), the encryption key becomes known to attackers. Additionally, the same key is used for all encryption operations, meaning if one encrypted value is compromised, all others encrypted with the same key are potentially at risk."
+        lang: "python"
+
+      - id: "crypto-3"
+        title: "Weak Random Number Generation"
+        description: "This function generates session tokens for user authentication. What security issue exists?"
+        difficulty: 1 # Intermediate
+        code: |
+          function generateSessionToken() {
+              const randomBytes = [];
+              for (let i = 0; i < 32; i++) {
+                  randomBytes.push(Math.floor(Math.random() * 256));
+              }
+              return Buffer.from(randomBytes).toString('hex');
+          }
+        options:
+          - "The function generates tokens that are too short"
+          - "The function uses Math.random() which is not cryptographically secure"
+          - "The function doesn't check for token collisions"
+          - "The function doesn't include timestamp information"
+        correctAnswer: "The function uses Math.random() which is not cryptographically secure"
+        hint: "Math.random() is not suitable for security purposes. What should be used instead?"
+        explanation: "Math.random() is a pseudo-random number generator that is not cryptographically secure. It's designed for statistical randomness, not security. Attackers could potentially predict the generated values, making session tokens predictable and vulnerable to session hijacking. For security-critical applications, use crypto.randomBytes() or crypto.getRandomValues() which provide cryptographically secure random numbers."
+        lang: "javascript"
 
   - category: "Injection"
     id: "injection"
@@ -119,16 +161,19 @@ challengeSets:
     challenges:
       - id: "sql-injection-basic"
         title: "Basic SQL Injection"
-        description: "This login function is vulnerable to SQL injection. Can you identify the vulnerability?"
+        description: "This function validates user login credentials against a database. What security vulnerability exists?"
         difficulty: 0 # Beginner
         code: |
           function checkLogin($username, $password) {
-            $query = "SELECT * FROM users WHERE username='" . $username . "' AND password='" . $password . "'";
-            $result = mysqli_query($connection, $query);
-            if(mysqli_num_rows($result) > 0) {
-              return true;
-            }
-            return false;
+              global $connection;
+              
+              $query = "SELECT * FROM users WHERE username='" . $username . "' AND password='" . $password . "'";
+              $result = mysqli_query($connection, $query);
+              
+              if(mysqli_num_rows($result) > 0) {
+                  return true;
+              }
+              return false;
           }
         options:
           - "The function doesn't escape special characters in the input"
@@ -137,20 +182,24 @@ challengeSets:
           - "The function doesn't check for empty inputs"
         correctAnswer: "The function doesn't escape special characters in the input"
         hint: "Look at how the query string is constructed. What happens if the username or password contains SQL syntax?"
+        explanation: "The function concatenates user input directly into the SQL query string without proper escaping or parameterization. An attacker can inject malicious SQL code through the username or password fields. For example, using username=' OR 1=1--' would result in the query 'SELECT * FROM users WHERE username='' OR 1=1--' AND password='...', bypassing authentication entirely."
         lang: "php"
 
       - id: "sql-injection-2"
         title: "SQL Injection in a Web Handler"
-        description: "This HTTP handler contains a security vulnerability. What is it?"
+        description: "This HTTP handler retrieves user profile information from a database. What security issue exists?"
         difficulty: 1 # Intermediate
         code: |
           func handleUserProfile(w http.ResponseWriter, r *http.Request) {
               userID := r.URL.Query().Get("id")
-
+              
               db, _ := sql.Open("mysql", "user:password@/dbname")
+              defer db.Close()
+              
               query := fmt.Sprintf("SELECT username, email FROM users WHERE id = %s", userID)
               rows, _ := db.Query(query)
-
+              defer rows.Close()
+              
               var username, email string
               if rows.Next() {
                   rows.Scan(&username, &email)
@@ -164,29 +213,59 @@ challengeSets:
           - "The handler sends sensitive information without encryption"
         correctAnswer: "The handler doesn't sanitize user input and is vulnerable to SQL injection"
         hint: "Notice how the userID parameter is included in the SQL query."
+        explanation: "The handler uses fmt.Sprintf to directly interpolate the userID parameter into the SQL query string. This allows attackers to inject malicious SQL code. For instance, if userID is '1; DROP TABLE users; --', the resulting query would be 'SELECT username, email FROM users WHERE id = 1; DROP TABLE users; --', potentially destroying the users table."
         lang: "go"
 
       - id: "command-injection-1"
         title: "Command Injection in Exec"
-        description: "This code is used to ping a server. What vulnerability does it have?"
-        difficulty: 0 # Beginner
+        description: "This function executes a system command to check server connectivity. What security vulnerability exists?"
+        difficulty: 1 # Intermediate
         code: |
-          func pingServer(serverAddress string) string {
-              cmd := exec.Command("ping", "-c", "3", serverAddress)
-              output, err := cmd.Output()
-              if err != nil {
-                  return "Error: " + err.Error()
-              }
-              return string(output)
-          }
+          def ping_server(server_address):
+              import subprocess
+              
+              command = f"ping -c 3 {server_address}"
+              result = subprocess.run(command, shell=True, capture_output=True, text=True)
+              
+              return result.stdout
         options:
           - "The function is vulnerable to command injection"
           - "The function doesn't validate the server address format"
           - "The ping command shouldn't be used in production code"
           - "The output isn't properly sanitized before returning"
         correctAnswer: "The function is vulnerable to command injection"
-        hint: "Think about what happens if serverAddress contains special shell characters."
-        lang: "go"
+        hint: "Think about what happens if server_address contains special shell characters."
+        explanation: "The function uses shell=True with subprocess.run(), which means the command is executed through the shell. If an attacker can control the server_address parameter, they can inject shell commands like '; rm -rf /' or '&& cat /etc/passwd'. The shell=True flag makes the function vulnerable to command injection attacks."
+        lang: "python"
+
+      - id: "nosql-injection-1"
+        title: "NoSQL Injection in MongoDB"
+        description: "This endpoint authenticates users against a MongoDB database. What security vulnerability exists?"
+        difficulty: 1 # Intermediate
+        code: |
+          app.post('/api/login', (req, res) => {
+              const { username, password } = req.body;
+              
+              const user = await User.findOne({
+                  username: username,
+                  password: password
+              });
+              
+              if (user) {
+                  res.json({ success: true, user: user });
+              } else {
+                  res.status(401).json({ success: false });
+              }
+          });
+        options:
+          - "The function doesn't validate input types"
+          - "The function is vulnerable to NoSQL injection attacks"
+          - "The function doesn't hash passwords"
+          - "The function doesn't implement rate limiting"
+        correctAnswer: "The function is vulnerable to NoSQL injection attacks"
+        hint: 'What happens if an attacker sends an object like {username: {$ne: ""}}?'
+        explanation: 'The function directly passes user input to MongoDB queries without validation. An attacker can send malicious objects like {username: {$ne: ""}} which would match any username that is not empty, potentially bypassing authentication. The $ne operator is a MongoDB query operator that means ''not equal'', allowing attackers to manipulate query logic.'
+        lang: "javascript"
 
   - category: "Insecure Design"
     id: "insecure-design"
@@ -194,46 +273,94 @@ challengeSets:
     challenges:
       - id: "insecure-design-1"
         title: "Insecure Password Recovery"
-        description: "This password recovery system has a design flaw. What is it?"
+        description: "This function handles password recovery for user accounts. What security design flaw exists?"
         difficulty: 1 # Intermediate
         code: |
+          import (
+              "math/rand"
+              "time"
+          )
+
+          func init() {
+              rand.Seed(time.Now().UnixNano())
+          }
+
           func PasswordRecovery(w http.ResponseWriter, r *http.Request) {
               if r.Method != "POST" {
                   renderPasswordRecoveryForm(w)
                   return
               }
-
+              
               email := r.FormValue("email")
-
+              
               user, err := db.FindUserByEmail(email)
               if err != nil {
                   http.Error(w, "User not found", http.StatusNotFound)
                   return
               }
-
+              
               securityQuestion := user.SecurityQuestion
               userAnswer := r.FormValue("answer")
-
+              
               if userAnswer == user.SecurityAnswer {
                   newPassword := generateRandomPassword()
                   user.SetPassword(newPassword)
                   user.Save()
-
+                  
                   sendPasswordEmail(user.Email, newPassword)
-
+                  
                   http.Redirect(w, r, "/login", http.StatusSeeOther)
               } else {
                   http.Error(w, "Incorrect answer", http.StatusUnauthorized)
               }
           }
+
+          func generateRandomPassword() string {
+              var charset = "abcdefghijklmnopqrstuvwxyz0123456789"
+              password := make([]byte, 6)
+              for i := range password {
+                  password[i] = charset[rand.Intn(len(charset))]
+              }
+              return string(password)
+          }
         options:
-          - "The function generates weak random passwords"
-          - "The security question and answer mechanism is susceptible to guessing/research attacks"
+          - "The function generates weak random passwords (only lowercase + numbers, 6 chars)"
+          - "The function sends passwords via insecure email"
           - "The function doesn't use rate limiting for recovery attempts"
           - "All of the above"
         correctAnswer: "All of the above"
-        hint: "Consider the entire password recovery flow. What would make this more secure?"
+        hint: "Look at the generateRandomPassword function and the email sending mechanism."
+        explanation: "The password recovery system has multiple definitive design flaws: 1) The generateRandomPassword function creates weak passwords using only lowercase letters and numbers with only 6 characters, making them easily guessable, 2) Sending passwords via email is inherently insecure as emails can be intercepted and are stored in plain text, and 3) No rate limiting allows attackers to brute force security question answers. A secure system should use time-limited tokens and require users to set their own strong passwords."
         lang: "go"
+
+      - id: "insecure-design-2"
+        title: "Race Condition in Account Creation"
+        description: "This function creates new user accounts in the system. What security design flaw exists?"
+        difficulty: 2 # Advanced
+        code: |
+          @PostMapping("/api/register")
+          public ResponseEntity<?> registerUser(@RequestBody UserRegistrationRequest request) {
+              // Check if user exists
+              if (userService.userExists(request.getUsername())) {
+                  return ResponseEntity.badRequest().body("Username already exists");
+              }
+              
+              User user = new User();
+              user.setUsername(request.getUsername());
+              user.setPassword(passwordEncoder.encode(request.getPassword()));
+              userService.saveUser(user);
+              
+              return ResponseEntity.ok("User created successfully");
+          }
+        options:
+          - "The function doesn't validate password strength"
+          - "The function is vulnerable to race condition attacks"
+          - "The function doesn't sanitize input"
+          - "The function doesn't implement proper error handling"
+        correctAnswer: "The function is vulnerable to race condition attacks"
+        hint: "What happens if two requests with the same username arrive simultaneously?"
+        explanation: "The function checks if a user exists and then creates the user, but there's a time gap between these operations. If two requests with the same username arrive simultaneously, both might pass the existence check before either user is saved, leading to duplicate accounts. This race condition can be exploited to bypass intended business logic."
+        lang: "java"
 
   - category: "Security Misconfiguration"
     id: "security-misconfiguration"
@@ -241,20 +368,20 @@ challengeSets:
     challenges:
       - id: "security-misconfig-1"
         title: "Verbose Error Messages"
-        description: "This database access code has a security issue. What is it?"
+        description: "This function attempts to connect to a database. What security issue exists?"
         difficulty: 0 # Beginner
         code: |
           func ConnectToDatabase(w http.ResponseWriter, r *http.Request) {
               dbUser := os.Getenv("DB_USER")
               dbPass := os.Getenv("DB_PASS")
               dbHost := os.Getenv("DB_HOST")
-
+              
               connStr := fmt.Sprintf("postgres://%s:%s@%s/app_database",
                   dbUser, dbPass, dbHost)
-
+              
               db, err := sql.Open("postgres", connStr)
               if err != nil {
-                  http.Error(w, "Database connection error: "+err.Error(), http.StatusInternalServerError)
+                                http.Error(w, "Database connection error: "+err.Error(), http.StatusInternalServerError)
                   return
               }
           }
@@ -265,7 +392,40 @@ challengeSets:
           - "The function doesn't close the database connection"
         correctAnswer: "The function returns detailed error messages to the client"
         hint: "What information might be exposed in the error message that could help an attacker?"
+        explanation: "The function returns the actual database error message to the client, which can reveal sensitive information about the database structure, connection details, or internal system information. Attackers can use this information to understand the system architecture and potentially exploit other vulnerabilities. Error messages should be generic and not expose internal system details."
         lang: "go"
+
+      - id: "security-misconfig-2"
+        title: "Missing Security Headers"
+        description: "This Express.js application sets up basic middleware and routes. What security configuration issue exists?"
+        difficulty: 1 # Intermediate
+        code: |
+          const express = require('express');
+          const app = express();
+
+          app.use(express.json());
+          app.use(express.urlencoded({ extended: true }));
+
+          // app.use(helmet());
+          // app.use(cors());
+          // app.use(rateLimit());
+
+          app.get('/', (req, res) => {
+              res.send('Hello World!');
+          });
+
+          app.listen(3000, () => {
+              console.log('Server running on port 3000');
+          });
+        options:
+          - "The app doesn't implement logging"
+          - "The app is missing essential security headers and middleware"
+          - "The app doesn't use HTTPS"
+          - "The app doesn't validate input"
+        correctAnswer: "The app is missing essential security headers and middleware"
+        hint: "Look at the commented middleware. What security protections are missing?"
+        explanation: "The application has commented out essential security middleware: helmet() provides security headers like X-Content-Type-Options, X-Frame-Options, and Content-Security-Policy; cors() controls cross-origin resource sharing; and rateLimit() prevents abuse through rate limiting. Without these protections, the app is vulnerable to various attacks including clickjacking, XSS, and brute force attacks."
+        lang: "javascript"
 
   - category: "Vulnerable and Outdated Components"
     id: "vulnerable-outdated-components"
@@ -273,7 +433,7 @@ challengeSets:
     challenges:
       - id: "outdated-components-1"
         title: "Vulnerable Dependencies"
-        description: "This package.json file has a security issue. What is it?"
+        description: "This package.json file defines the project dependencies. What security issue exists?"
         difficulty: 0 # Beginner
         code: |
           {
@@ -297,7 +457,35 @@ challengeSets:
           - "The file doesn't specify exact versions"
         correctAnswer: "The file is using outdated dependencies with known vulnerabilities"
         hint: "Check the version numbers. Many of these packages have had serious vulnerabilities discovered after these versions were released."
+        explanation: "The package.json uses outdated versions of dependencies that contain known security vulnerabilities. For example, Express 4.14.0 has multiple CVE vulnerabilities, jQuery 1.12.4 has XSS vulnerabilities, and other packages have similar issues. Using outdated dependencies exposes the application to attacks that have already been patched in newer versions."
         lang: "json"
+
+      - id: "outdated-components-2"
+        title: "Vulnerable Docker Base Image"
+        description: "This Dockerfile sets up a Node.js application container. What security issue exists?"
+        difficulty: 1 # Intermediate
+        code: |
+          # Using outdated base image with known vulnerabilities
+          FROM node:8.17.0
+
+          WORKDIR /app
+
+          COPY package*.json ./
+          RUN npm install
+
+          COPY . .
+
+          EXPOSE 3000
+          CMD ["npm", "start"]
+        options:
+          - "The base image is outdated and contains known vulnerabilities"
+          - "The Dockerfile doesn't specify a user"
+          - "The Dockerfile doesn't implement multi-stage builds"
+          - "The Dockerfile doesn't use .dockerignore"
+        correctAnswer: "The base image is outdated and contains known vulnerabilities"
+        hint: "Node.js 8.17.0 reached end-of-life in 2019 and contains multiple security vulnerabilities."
+        explanation: "Node.js 8.17.0 reached end-of-life in December 2019 and no longer receives security updates. This version contains multiple known vulnerabilities including CVE-2019-1563, CVE-2019-1567, and others. Using an outdated base image means the container inherits all these vulnerabilities, making the application vulnerable to various attacks."
+        lang: "dockerfile"
 
   - category: "Identification and Authentication Failures"
     id: "identification-and-auth-failures"
@@ -305,39 +493,42 @@ challengeSets:
     challenges:
       - id: "auth-1"
         title: "Insecure Session Management"
-        description: "What security vulnerability exists in this session creation code?"
+        description: "This function creates session tokens for authenticated users. What security vulnerability exists?"
         difficulty: 1 # Intermediate
         code: |
-          func createSession(userID int) string {
-              timestamp := time.Now().Unix()
-              token := fmt.Sprintf("%d:%d", userID, timestamp)
-
-              sessions[token] = userID
-
-              return token
+          function createSession(userId) {
+              const timestamp = Date.now();
+              const token = `${userId}:${timestamp}`;
+              
+              sessions[token] = {
+                  userId: userId,
+                  createdAt: timestamp,
+                  expiresAt: timestamp + (24 * 60 * 60 * 1000) // 24 hours
+              };
+              
+              return token;
           }
         options:
           - "The session token is predictable and can be guessed"
-          - "The session doesn't have an expiration time"
-          - "The sessions map could have memory leaks"
+          - "The session token format is too simple"
+          - "The sessions object could have memory leaks"
           - "The function doesn't check if the user exists"
         correctAnswer: "The session token is predictable and can be guessed"
         hint: "How is the session token generated? Is there any randomness?"
-        lang: "go"
+        explanation: "The session token is constructed as 'userId:timestamp', which is completely predictable. An attacker who knows a user's ID can easily guess their session token by using the current timestamp or common timestamp patterns. This makes session hijacking trivial, as attackers can forge valid session tokens without needing to steal them."
+        lang: "javascript"
 
       - id: "auth-2"
         title: "Weak Password Policy"
-        description: "This password validation function has a security issue. What is it?"
+        description: "This function validates password strength for new user accounts. What security issue exists?"
         difficulty: 0 # Beginner
-        # too easy
         code: |
-          function validatePassword(password) {
-              if (password.length < 6) {
-                  return false;
-              }
-
-              return true;
-          }
+          def validate_password(password):
+              if len(password) < 6:
+                  return False
+              
+              # No complexity requirements
+              return True
         options:
           - "The password policy only checks for length, not complexity"
           - "The minimum password length is too short"
@@ -345,7 +536,34 @@ challengeSets:
           - "All of the above"
         correctAnswer: "All of the above"
         hint: "What makes a strong password policy?"
-        lang: "javascript"
+        explanation: "The password validation has multiple weaknesses: 1) It only checks length (minimum 6 characters), which is too short for security, 2) It has no complexity requirements (no uppercase, lowercase, numbers, or special characters), and 3) It doesn't check against common passwords or dictionary words. A strong password policy should require longer passwords with mixed character types and check against known weak passwords."
+        lang: "python"
+
+      - id: "auth-3"
+        title: "Missing Rate Limiting"
+        description: "This endpoint handles user authentication. What security protection is missing?"
+        difficulty: 1 # Intermediate
+        code: |
+          @app.route('/login', methods=['POST'])
+          def login():
+              username = request.form['username']
+              password = request.form['password']
+              
+              user = User.query.filter_by(username=username).first()
+              if user and user.check_password(password):
+                  session['user_id'] = user.id
+                  return redirect(url_for('dashboard'))
+              else:
+                  return render_template('login.html', error='Invalid credentials')
+        options:
+          - "The endpoint doesn't implement rate limiting"
+          - "The endpoint doesn't log failed attempts"
+          - "The endpoint doesn't use CSRF protection"
+          - "All of the above"
+        correctAnswer: "All of the above"
+        hint: "How would you prevent automated attacks on this endpoint?"
+        explanation: "The login endpoint lacks multiple security protections: 1) No rate limiting allows attackers to brute force passwords through automated attempts, 2) No logging of failed attempts means attacks go undetected, and 3) No CSRF protection makes the endpoint vulnerable to cross-site request forgery attacks. These missing protections make the authentication system vulnerable to various automated attacks."
+        lang: "python"
 
   - category: "Software and Data Integrity Failures"
     id: "software-and-data-integrity-failures"
@@ -353,7 +571,7 @@ challengeSets:
     challenges:
       - id: "integrity-1"
         title: "Insecure Deserialization"
-        description: "This code deserializes user data from a cookie. What vulnerability exists?"
+        description: "This function loads user preferences from a browser cookie. What security vulnerability exists?"
         difficulty: 1 # Intermediate
         code: |
           func loadUserPreferences(r *http.Request) map[string]interface{} {
@@ -361,17 +579,17 @@ challengeSets:
               if err != nil {
                   return map[string]interface{}{}
               }
-
+              
               decoded, err := base64.StdEncoding.DecodeString(cookie.Value)
               if err != nil {
                   return map[string]interface{}{}
               }
-
+              
               var prefs map[string]interface{}
               if err := json.Unmarshal(decoded, &prefs); err != nil {
                   return map[string]interface{}{}
               }
-
+              
               return prefs
           }
         options:
@@ -381,7 +599,37 @@ challengeSets:
           - "The function doesn't handle errors properly"
         correctAnswer: "The function accepts any JSON without verification"
         hint: "What prevents an attacker from modifying the cookie to inject unexpected values?"
+        explanation: "The function deserializes JSON data from cookies without any validation or verification. An attacker can modify the cookie to inject malicious data structures, potentially leading to unexpected behavior or security vulnerabilities. The function should validate the structure and content of the JSON data before processing it."
         lang: "go"
+
+      - id: "integrity-2"
+        title: "Insecure File Upload"
+        description: "This function allows users to upload files to the server. What security vulnerability exists?"
+        difficulty: 1 # Intermediate
+        code: |
+          @PostMapping("/upload")
+          public ResponseEntity<String> uploadFile(@RequestParam("file") MultipartFile file) {
+              try {
+                  String fileName = file.getOriginalFilename();
+                  String filePath = "/var/uploads/" + fileName;
+                  
+                  File dest = new File(filePath);
+                  file.transferTo(dest);
+                  
+                  return ResponseEntity.ok("File uploaded successfully");
+              } catch (Exception e) {
+                  return ResponseEntity.status(500).body("Upload failed");
+              }
+          }
+        options:
+          - "The function doesn't validate file types"
+          - "The function is vulnerable to path traversal and executable uploads"
+          - "The function doesn't check file size limits"
+          - "All of the above"
+        correctAnswer: "All of the above"
+        hint: "What prevents an attacker from uploading malicious files or accessing system directories?"
+        explanation: "The file upload function has multiple security issues: 1) No file type validation allows upload of executable files, 2) No path traversal protection means attackers can upload files to system directories using '../' sequences, and 3) No file size limits could lead to denial of service attacks. The function should validate file types, sanitize file paths, and enforce size limits."
+        lang: "java"
 
   - category: "Security Logging and Monitoring Failures"
     id: "security-logging-and-monitoring-failures"
@@ -389,24 +637,24 @@ challengeSets:
     challenges:
       - id: "logging-1"
         title: "Insufficient Logging"
-        description: "This login handler has a security monitoring issue. What is it?"
+        description: "This function handles user login attempts. What security monitoring issue exists?"
         difficulty: 0 # Beginner
         code: |
           func handleLogin(w http.ResponseWriter, r *http.Request) {
               username := r.FormValue("username")
               password := r.FormValue("password")
-
+              
               user, err := db.GetUserByUsername(username)
               if err != nil {
                   http.Error(w, "Login failed", http.StatusUnauthorized)
                   return
               }
-
+              
               if !user.CheckPassword(password) {
                   http.Error(w, "Login failed", http.StatusUnauthorized)
                   return
               }
-
+              
               session := createSession(user.ID)
               setCookie(w, "session", session)
               http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
@@ -418,7 +666,31 @@ challengeSets:
           - "The function doesn't sanitize inputs"
         correctAnswer: "The function doesn't log failed login attempts"
         hint: "How would you detect brute force attacks or compromised accounts?"
+        explanation: "The function doesn't log failed login attempts, making it impossible to detect brute force attacks, account takeover attempts, or other suspicious authentication patterns. Without logging, security teams cannot identify compromised accounts, track attack patterns, or implement proper incident response. Logging should include timestamps, IP addresses, and usernames for security monitoring."
         lang: "go"
+
+      - id: "logging-2"
+        title: "Missing Audit Trail"
+        description: "This function allows administrators to delete user accounts. What security logging issue exists?"
+        difficulty: 1 # Intermediate
+        code: |
+          def delete_user(user_id):
+              user = User.query.get(user_id)
+              if user:
+                  db.session.delete(user)
+                  db.session.commit()
+                  return {"message": "User deleted successfully"}
+              else:
+                  return {"error": "User not found"}, 404
+        options:
+          - "The function doesn't log the admin action"
+          - "The function doesn't validate permissions"
+          - "The function doesn't implement soft delete"
+          - "All of the above"
+        correctAnswer: "All of the above"
+        hint: "How would you track who performed this action and when?"
+        explanation: "The function has multiple security logging issues: 1) No audit trail means administrators can delete users without accountability, 2) No permission validation allows unauthorized users to potentially delete accounts, and 3) No soft delete means the action is irreversible and no recovery is possible. Proper logging should record who performed the action, when, and why, for compliance and security purposes."
+        lang: "python"
 
   - category: "Server-Side Request Forgery"
     id: "ssrf"
@@ -426,25 +698,25 @@ challengeSets:
     challenges:
       - id: "ssrf-1"
         title: "Basic SSRF Vulnerability"
-        description: "This function fetches a user-specified URL. What security issue does it have?"
+        description: "This function fetches external resources based on user input. What security vulnerability exists?"
         difficulty: 1 # Intermediate
         code: |
           func fetchExternalResource(w http.ResponseWriter, r *http.Request) {
               resourceURL := r.URL.Query().Get("url")
-
+              
               resp, err := http.Get(resourceURL)
               if err != nil {
                   http.Error(w, "Failed to fetch resource", http.StatusInternalServerError)
                   return
               }
               defer resp.Body.Close()
-
+              
               body, err := ioutil.ReadAll(resp.Body)
               if err != nil {
                   http.Error(w, "Failed to read resource", http.StatusInternalServerError)
                   return
               }
-
+              
               w.Write(body)
           }
         options:
@@ -454,4 +726,798 @@ challengeSets:
           - "The function doesn't check the response content type"
         correctAnswer: "The function doesn't validate or sanitize the URL parameter"
         hint: "What happens if the URL points to an internal network resource?"
+        explanation: "The function fetches any URL provided by the user without validation, making it vulnerable to Server-Side Request Forgery (SSRF). Attackers can use this to access internal services, localhost endpoints, or cloud metadata services that should not be accessible from the internet. For example, they could access internal APIs, database endpoints, or cloud instance metadata to gather sensitive information."
         lang: "go"
+
+      - id: "ssrf-2"
+        title: "SSRF in Image Processing"
+        description: "This service processes images from external URLs. What security vulnerability exists?"
+        difficulty: 2 # Advanced
+        code: |
+          app.post('/api/process-image', (req, res) => {
+              const { imageUrl } = req.body;
+              
+              const imageBuffer = await fetch(imageUrl).then(res => res.buffer());
+              
+              const processedImage = await sharp(imageBuffer)
+                  .resize(800, 600)
+                  .jpeg({ quality: 80 })
+                  .toBuffer();
+              
+              res.set('Content-Type', 'image/jpeg');
+              res.send(processedImage);
+          });
+        options:
+          - "The function doesn't validate the image URL"
+          - "The function is vulnerable to SSRF attacks"
+          - "The function doesn't check file size limits"
+          - "The function doesn't implement proper error handling"
+        correctAnswer: "The function is vulnerable to SSRF attacks"
+        hint: "What prevents an attacker from using this endpoint to access internal services?"
+        explanation: "The function fetches images from any URL provided by the user without validation, making it vulnerable to Server-Side Request Forgery (SSRF). Attackers can use this to access internal services, localhost endpoints, or cloud metadata services by providing URLs like 'http://localhost:8080/admin' or 'http://169.254.169.254/latest/meta-data/' (AWS metadata). The function should validate URLs to prevent access to internal network resources."
+        lang: "javascript"
+
+  - category: "Cross-Site Scripting (XSS)"
+    id: "xss"
+    description: "XSS vulnerabilities allow attackers to inject malicious scripts into web pages viewed by other users."
+    challenges:
+      - id: "xss-1"
+        title: "Reflected XSS"
+        description: "This function displays search results to users. What security vulnerability exists?"
+        difficulty: 1 # Intermediate
+        code: |
+          @app.route('/search')
+          def search():
+              query = request.args.get('q', '')
+              
+              return f'''
+              <html>
+                  <body>
+                      <h1>Search Results for: {query}</h1>
+                      <p>No results found for "{query}"</p>
+                  </body>
+              </html>
+              '''
+        options:
+          - "The function doesn't validate the search query"
+          - "The function is vulnerable to reflected XSS attacks"
+          - "The function doesn't implement search functionality"
+          - "The function doesn't handle empty queries"
+        correctAnswer: "The function is vulnerable to reflected XSS attacks"
+        hint: "What happens if the query contains HTML or JavaScript code?"
+        explanation: 'The function directly interpolates user input into the HTML response without any sanitization or encoding. An attacker can inject malicious JavaScript code through the query parameter. For example, using ''q=<script>alert("XSS")</script>'' would result in the script being executed in the user''s browser, potentially stealing cookies, session tokens, or performing other malicious actions.'
+        lang: "python"
+
+      - id: "xss-2"
+        title: "Stored XSS in Comments"
+        description: "This system allows users to post comments that are stored and displayed. What security vulnerability exists?"
+        difficulty: 1 # Intermediate
+        code: |
+          app.post('/api/comments', (req, res) => {
+              const { content, postId } = req.body;
+              
+              const comment = new Comment({
+                  content: content,
+                  postId: postId,
+                  author: req.user.id,
+                  createdAt: new Date()
+              });
+              
+              comment.save();
+              res.json({ success: true, comment: comment });
+          });
+        options:
+          - "The function doesn't validate comment length"
+          - "The function is vulnerable to stored XSS attacks"
+          - "The function doesn't check for spam"
+          - "The function doesn't implement rate limiting"
+        correctAnswer: "The function is vulnerable to stored XSS attacks"
+        hint: "What happens when the comment content contains malicious HTML/JavaScript?"
+        explanation: "The function stores user input directly in the database without sanitization and then displays it to other users. An attacker can post comments containing malicious HTML or JavaScript code that gets stored and then executed when other users view the comment. This stored XSS attack can persist across sessions and affect multiple users, potentially stealing credentials or performing actions on behalf of other users."
+        lang: "javascript"
+
+  - category: "Cross-Site Request Forgery (CSRF)"
+    id: "csrf"
+    description: "CSRF attacks force authenticated users to perform unwanted actions on a web application."
+    challenges:
+      - id: "csrf-1"
+        title: "Missing CSRF Protection"
+        description: "This endpoint allows users to change their passwords. What security protection is missing?"
+        difficulty: 1 # Intermediate
+        code: |
+          @PostMapping("/api/change-password")
+          public ResponseEntity<?> changePassword(@RequestBody PasswordChangeRequest request) {
+                        User user = getCurrentUser();
+              if (user.checkPassword(request.getCurrentPassword())) {
+                  user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+                  userService.saveUser(user);
+                  
+                  return ResponseEntity.ok("Password changed successfully");
+              } else {
+                  return ResponseEntity.badRequest().body("Current password incorrect");
+              }
+          }
+        options:
+          - "The endpoint doesn't validate CSRF tokens"
+          - "The endpoint doesn't check password strength"
+          - "The endpoint doesn't log password changes"
+          - "The endpoint doesn't implement rate limiting"
+        correctAnswer: "The endpoint doesn't validate CSRF tokens"
+        hint: "How would you prevent an attacker from changing a user's password via a malicious website?"
+        explanation: "The endpoint lacks CSRF (Cross-Site Request Forgery) protection, making it vulnerable to attacks where malicious websites can trick authenticated users into changing their passwords. Without CSRF tokens, an attacker can create a form that automatically submits to this endpoint when a user visits their site, potentially changing the user's password without their knowledge."
+        lang: "java"
+
+  - category: "Business Logic Vulnerabilities"
+    id: "business-logic"
+    description: "Business logic vulnerabilities occur when application logic can be manipulated to bypass intended restrictions."
+    challenges:
+      - id: "business-logic-1"
+        title: "Price Manipulation"
+        description: "This function processes customer orders and calculates totals. What business logic vulnerability exists?"
+        difficulty: 2 # Advanced
+        code: |
+          def process_order(order_data):
+              total = order_data.get('total', 0)
+              items = order_data.get('items', [])
+              
+              # Client can send any total amount
+              if total > 0:
+                  # Process payment with client-provided total
+                  payment_result = process_payment(total)
+                  
+                  if payment_result.success:
+                      create_order(order_data)
+                      return {"success": True, "order_id": generate_order_id()}
+              
+              return {"success": False, "error": "Invalid order"}
+        options:
+          - "The function trusts client-side calculations"
+          - "The function doesn't validate item prices"
+          - "The function is vulnerable to price manipulation"
+          - "The function doesn't implement proper error handling"
+        correctAnswer: "The function is vulnerable to price manipulation"
+        hint: "What prevents a client from sending a manipulated total amount?"
+        explanation: "The function accepts the total amount directly from the client without recalculating it based on the actual items. This allows attackers to manipulate the price by sending a lower total amount than what the items actually cost. The function should calculate the total server-side based on item prices and quantities, not trust client-provided values."
+        lang: "python"
+
+      - id: "business-logic-2"
+        title: "Race Condition in Inventory"
+        description: "This function handles inventory purchases and stock updates. What concurrency vulnerability exists?"
+        difficulty: 2 # Advanced
+        code: |
+          func purchaseItem(w http.ResponseWriter, r *http.Request) {
+              itemID := r.URL.Query().Get("item_id")
+              quantity := r.URL.Query().Get("quantity")
+              
+              item := db.GetItem(itemID)
+              if item.Stock < quantity {
+                  http.Error(w, "Insufficient stock", http.StatusBadRequest)
+                  return
+              }
+              
+              if processPayment() {
+                  item.Stock -= quantity
+                  db.UpdateItem(item)
+                  
+                  w.Write([]byte("Purchase successful"))
+              }
+          }
+        options:
+          - "The function doesn't validate quantity"
+          - "The function is vulnerable to race condition attacks"
+          - "The function doesn't implement proper error handling"
+          - "The function doesn't check user permissions"
+        correctAnswer: "The function is vulnerable to race condition attacks"
+        hint: "What happens if multiple purchases happen simultaneously for the same item?"
+        lang: "go"
+
+  - category: "API Security Vulnerabilities"
+    id: "api-security"
+    description: "Modern APIs often have unique security challenges related to authentication, authorization, and data validation."
+    challenges:
+      - id: "api-security-1"
+        title: "Mass Assignment Vulnerability"
+        description: "This API endpoint creates user profiles from JSON input. What security vulnerability exists?"
+        difficulty: 1 # Intermediate
+        code: |
+          @PostMapping("/api/users")
+          public ResponseEntity<User> createUser(@RequestBody User user) {
+              User newUser = new User();
+              newUser.setUsername(user.getUsername());
+              newUser.setEmail(user.getEmail());
+              newUser.setPassword(user.getPassword());
+              newUser.setRole(user.getRole());
+              newUser.setIsActive(user.getIsActive());
+              
+              User savedUser = userService.save(newUser);
+              return ResponseEntity.ok(savedUser);
+          }
+        options:
+          - "The endpoint doesn't validate email format"
+          - "The endpoint is vulnerable to mass assignment attacks"
+          - "The endpoint doesn't hash passwords"
+          - "The endpoint doesn't check for duplicate usernames"
+        correctAnswer: "The endpoint is vulnerable to mass assignment attacks"
+        hint: "What happens if an attacker sends a JSON payload with unexpected fields?"
+        explanation: "The endpoint is vulnerable to mass assignment attacks because it directly maps all fields from the request body to the User object without validation. An attacker can send a JSON payload with unexpected fields like 'role' or 'isActive' that could grant them elevated privileges or activate disabled accounts. The endpoint should explicitly whitelist only the fields that users are allowed to set, preventing unauthorized field manipulation."
+        lang: "java"
+
+      - id: "api-security-2"
+        title: "Insecure API Key Storage"
+        description: "This function stores API keys for external service integration. What security issue exists?"
+        difficulty: 1 # Intermediate
+        code: |
+          def store_api_key(service_name, api_key):
+              with open('api_keys.txt', 'a') as f:
+                  f.write(f"{service_name}: {api_key}\n")
+              
+              os.environ[f"{service_name.upper()}_API_KEY"] = api_key
+              
+              return True
+        options:
+          - "The function stores API keys in plain text files"
+          - "The function doesn't encrypt the API keys"
+          - "The function exposes keys in environment variables"
+          - "All of the above"
+        correctAnswer: "All of the above"
+        hint: "How are the API keys protected from unauthorized access?"
+        explanation: "The function has multiple security issues: 1) It stores API keys in plain text files (api_keys.txt) which can be easily read by anyone with file access, 2) It doesn't encrypt the API keys, leaving them exposed in their original form, and 3) It sets environment variables with the API keys, which can be accessed by other processes and logged in system logs. API keys should be stored in secure key management systems with encryption."
+        lang: "python"
+
+      - id: "api-security-3"
+        title: "Missing API Rate Limiting"
+        description: "This API endpoint processes user requests without restrictions. What security protection is missing?"
+        difficulty: 1 # Intermediate
+        code: |
+          app.post('/api/process-data', (req, res) => {
+              const { data } = req.body;
+              
+              const result = processUserData(data);
+              
+              res.json({ 
+                  success: true, 
+                  result: result,
+                  timestamp: new Date().toISOString()
+              });
+          });
+        options:
+          - "The endpoint doesn't validate input data"
+          - "The endpoint doesn't implement rate limiting"
+          - "The endpoint doesn't log requests"
+          - "The endpoint doesn't use authentication"
+        correctAnswer: "The endpoint doesn't implement rate limiting"
+        hint: "What prevents an attacker from overwhelming this endpoint with requests?"
+        explanation: "The endpoint lacks rate limiting, which is a critical security protection that prevents abuse and attacks. Without rate limiting, attackers can overwhelm the endpoint with excessive requests, potentially causing denial of service, exhausting system resources, or enabling brute force attacks. Rate limiting should restrict the number of requests per user/IP address within a specific time window to maintain service availability and security."
+        lang: "javascript"
+
+  - category: "Cloud Security Misconfigurations"
+    id: "cloud-security"
+    description: "Cloud environments introduce new security challenges related to configuration, permissions, and service integration."
+    challenges:
+      - id: "cloud-security-1"
+        title: "Overly Permissive IAM Policy"
+        description: "This AWS IAM policy grants permissions to users. What security issue exists?"
+        difficulty: 1 # Intermediate
+        code: |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": [
+                  "s3:*",
+                  "ec2:*",
+                  "lambda:*",
+                  "iam:*"
+                ],
+                "Resource": "*"
+              }
+            ]
+          }
+        options:
+          - "The policy grants excessive permissions"
+          - "The policy uses wildcard resources"
+          - "The policy doesn't follow least privilege principle"
+          - "All of the above"
+        correctAnswer: "All of the above"
+        hint: "What principle of security is violated by granting all actions on all resources?"
+        explanation: "The IAM policy violates multiple security principles: 1) It grants excessive permissions by allowing all actions (s3:*, ec2:*, lambda:*, iam:*) which is far more than most users need, 2) It uses wildcard resources (*) giving access to all resources in the account, and 3) It violates the least privilege principle by not restricting permissions to only what's necessary for the user's role. This policy could allow users to access, modify, or delete any resource in the AWS account."
+        lang: "json"
+
+      - id: "cloud-security-2"
+        title: "Public S3 Bucket Access"
+        description: "This S3 bucket configuration allows public access. What security vulnerability exists?"
+        difficulty: 0 # Beginner
+        code: |
+          resource "aws_s3_bucket" "user_uploads" {
+            bucket = "my-app-user-uploads"
+            
+            acl = "public-read"
+            
+            versioning {
+              enabled = true
+            }
+          }
+        options:
+          - "The bucket allows public read access"
+          - "The bucket doesn't have encryption enabled"
+          - "The bucket doesn't restrict access by IP"
+          - "All of the above"
+        correctAnswer: "All of the above"
+        hint: "Who can access files stored in this bucket?"
+        explanation: "The S3 bucket configuration has multiple security issues: 1) The 'public-read' ACL allows anyone on the internet to read files stored in the bucket, 2) No encryption is enabled, meaning files are stored in plain text and could be intercepted, and 3) No IP restrictions are in place, allowing access from any location. This configuration could expose sensitive user data to unauthorized access and doesn't follow security best practices for cloud storage."
+        lang: "hcl"
+
+      - id: "cloud-security-3"
+        title: "Exposed Cloud Metadata"
+        description: "This cloud instance configuration exposes metadata endpoints. What security risk exists?"
+        difficulty: 2 # Advanced
+        code: |
+          #!/bin/bash
+
+          echo "169.254.169.254 metadata.aws.internal" >> /etc/hosts
+
+          iptables -A INPUT -p tcp --dport 80 -j ACCEPT
+          iptables -A INPUT -p tcp --dport 443 -j ACCEPT
+
+          python3 -m http.server 80
+        options:
+          - "The script exposes metadata endpoints publicly"
+          - "The script doesn't restrict access to metadata"
+          - "The script creates a public web server"
+          - "All of the above"
+        correctAnswer: "All of the above"
+        hint: "What sensitive information could an attacker obtain from the metadata endpoint?"
+        explanation: "The script has multiple security vulnerabilities: 1) It exposes cloud metadata endpoints publicly by adding the metadata IP to /etc/hosts and opening ports 80/443, 2) It doesn't restrict access to metadata, allowing anyone to query sensitive instance information, and 3) It creates a public web server that can be accessed from anywhere. Cloud metadata endpoints contain sensitive information like IAM credentials, instance details, and user data that attackers can exploit."
+        lang: "bash"
+
+  - category: "Mobile Application Security"
+    id: "mobile-security"
+    description: "Mobile applications have unique security challenges related to data storage, network communication, and platform-specific vulnerabilities."
+    challenges:
+      - id: "mobile-security-1"
+        title: "Insecure Local Storage"
+        description: "This Android app stores sensitive user data locally. What security issue exists?"
+        difficulty: 1 # Intermediate
+        code: |
+          public class UserDataManager {
+              private static final String PREFS_NAME = "UserPrefs";
+              private SharedPreferences prefs;
+              
+                        public void saveUserCredentials(String username, String password) {
+              prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+              
+              SharedPreferences.Editor editor = prefs.edit();
+              editor.putString("username", username);
+              editor.putString("password", password);
+              editor.commit();
+          }
+          }
+        options:
+          - "The app stores passwords in plain text"
+          - "The app uses insecure SharedPreferences"
+          - "The app doesn't encrypt sensitive data"
+          - "All of the above"
+        correctAnswer: "All of the above"
+        hint: "How are the stored credentials protected from unauthorized access?"
+        explanation: "The Android app has multiple security issues: 1) It stores passwords in plain text without any encryption, making them easily readable if the device is compromised, 2) It uses SharedPreferences which stores data in unencrypted XML files that can be accessed by other apps with the same user ID, and 3) It doesn't encrypt sensitive data, leaving credentials vulnerable to extraction through device rooting or app analysis tools. Sensitive data should be encrypted using Android Keystore or similar secure storage mechanisms."
+        lang: "java"
+
+      - id: "mobile-security-2"
+        title: "Certificate Pinning Bypass"
+        description: "This iOS app implements certificate pinning but has a vulnerability. What security issue exists?"
+        difficulty: 2 # Advanced
+        code: |
+          class NetworkManager {
+                        func validateCertificate(_ serverTrust: SecTrust) -> Bool {
+              let certificates = SecTrustCopyCertificateChain(serverTrust)
+              
+              if let cert = CFArrayGetValueAtIndex(certificates, 0) {
+                  let certData = SecCertificateCopyData(cert as! SecCertificate)
+                  
+                  return certData == pinnedCertificateData
+              }
+              
+              return false
+          }
+          }
+        options:
+          - "The function only validates the first certificate"
+          - "The function doesn't check the certificate chain"
+          - "The function is vulnerable to certificate chain attacks"
+          - "All of the above"
+        correctAnswer: "All of the above"
+        hint: "What happens if an attacker presents a valid certificate in the middle of the chain?"
+        explanation: "The certificate validation function has multiple vulnerabilities: 1) It only validates the first certificate in the chain, ignoring the rest, 2) It doesn't check the certificate chain integrity, allowing intermediate certificates to be manipulated, and 3) It's vulnerable to certificate chain attacks where an attacker can present a valid certificate in the middle of a malicious chain. Proper certificate pinning should validate the entire chain and ensure the root certificate is trusted."
+        lang: "swift"
+
+  - category: "DevOps and CI/CD Security"
+    id: "devops-security"
+    description: "Modern development practices introduce security challenges in build pipelines, infrastructure as code, and deployment processes."
+    challenges:
+      - id: "devops-security-1"
+        title: "Exposed Secrets in CI/CD"
+        description: "This GitHub Actions workflow contains security issues. What vulnerability exists?"
+        difficulty: 1 # Intermediate
+        code: |
+          name: Deploy to Production
+          on:
+            push:
+              branches: [main]
+
+          jobs:
+            deploy:
+              runs-on: ubuntu-latest
+              steps:
+                - uses: actions/checkout@v2
+                
+                - name: Deploy to server
+                  run: |
+                                         echo "Deploying with user: ${{ secrets.DEPLOY_USER }}"
+                    echo "Using password: ${{ secrets.DEPLOY_PASS }}"
+                    
+                    # Execute deployment script
+                    ./deploy.sh ${{ secrets.DEPLOY_USER }} ${{ secrets.DEPLOY_PASS }}
+        options:
+          - "The workflow exposes secrets in log output"
+          - "The workflow doesn't use secure secret handling"
+          - "The workflow passes secrets as command line arguments"
+          - "All of the above"
+        correctAnswer: "All of the above"
+        hint: "What happens to the secrets when the workflow runs?"
+        explanation: "The GitHub Actions workflow has multiple security issues: 1) It exposes secrets in log output by echoing them, making them visible to anyone with access to the workflow logs, 2) It doesn't use secure secret handling practices, exposing credentials unnecessarily, and 3) It passes secrets as command line arguments, which can be visible in process lists and system logs. Secrets should never be logged or passed as command line arguments, and access to workflow logs should be restricted."
+        lang: "yaml"
+
+      - id: "devops-security-2"
+        title: "Insecure Docker Registry Access"
+        description: "This Docker Compose configuration has security issues. What vulnerability exists?"
+        difficulty: 1 # Intermediate
+        code: |
+          version: '3.8'
+          services:
+            app:
+              image: myapp:latest
+              ports:
+                - "3000:3000"
+              
+            database:
+              image: postgres:13
+              environment:
+                                 POSTGRES_PASSWORD: admin123
+                 POSTGRES_USER: postgres
+               ports:
+                 - "5432:5432"
+               
+               redis:
+                 image: redis:6
+                 ports:
+                   - "6379:6379"
+        options:
+          - "The configuration uses hardcoded passwords"
+          - "The configuration exposes database ports publicly"
+          - "The configuration doesn't use secrets management"
+          - "All of the above"
+        correctAnswer: "All of the above"
+        hint: "What security risks exist when database ports are exposed?"
+        lang: "yaml"
+
+  - category: "WebSocket Security"
+    id: "websocket-security"
+    description: "WebSocket connections introduce real-time communication security challenges including authentication, authorization, and message validation."
+    challenges:
+      - id: "websocket-security-1"
+        title: "Missing WebSocket Authentication"
+        description: "This WebSocket server accepts connections without authentication. What security issue exists?"
+        difficulty: 1 # Intermediate
+        code: |
+          const WebSocket = require('ws');
+          const wss = new WebSocket.Server({ port: 8080 });
+
+          wss.on('connection', function connection(ws) {
+              
+              ws.on('message', function incoming(message) {
+                  console.log('received: %s', message);
+                  
+                  ws.send('Server received: ' + message);
+              });
+          });
+        options:
+          - "The server doesn't authenticate connections"
+          - "The server doesn't validate messages"
+          - "The server doesn't implement access control"
+          - "All of the above"
+        correctAnswer: "All of the above"
+        hint: "Who can connect to this WebSocket server and what can they do?"
+        explanation: "The WebSocket server has multiple security vulnerabilities: 1) It doesn't authenticate connections, allowing anyone to connect without verification, 2) It doesn't validate incoming messages, potentially accepting malicious payloads, and 3) It doesn't implement access control, meaning any connected client can send messages and receive responses. This makes the server vulnerable to unauthorized access, message injection, and potential abuse by malicious clients."
+        lang: "javascript"
+
+  - category: "GraphQL Security"
+    id: "graphql-security"
+    description: "GraphQL APIs have unique security challenges including query complexity, introspection, and field-level access control."
+    challenges:
+      - id: "graphql-security-1"
+        title: "GraphQL Introspection Enabled"
+        description: "This GraphQL server configuration has a security issue. What vulnerability exists?"
+        difficulty: 1 # Intermediate
+        code: |
+          const { ApolloServer } = require('apollo-server');
+          const { buildSchema } = require('graphql');
+
+          const server = new ApolloServer({
+              typeDefs: buildSchema(`
+                  type User {
+                      id: ID!
+                      username: String!
+                      email: String!
+                      password: String!
+                  }
+                  
+                  type Query {
+                      users: [User!]!
+                      user(id: ID!): User
+                  }
+              `),
+              resolvers: {
+                  Query: {
+                      users: () => User.find(),
+                      user: (_, { id }) => User.findById(id)
+                  }
+              },
+              introspection: true,
+              playground: true
+          });
+        options:
+          - "The server enables GraphQL introspection"
+          - "The server exposes the GraphQL playground"
+          - "The server doesn't implement query depth limits"
+          - "All of the above"
+        correctAnswer: "All of the above"
+        hint: "What information can an attacker obtain about the API structure?"
+        explanation: "The GraphQL server configuration has multiple security issues: 1) Introspection is enabled, allowing attackers to query the schema and discover all available types, fields, and operations, 2) The GraphQL playground is exposed, providing an interactive interface for exploring and testing the API, and 3) No query depth limits are implemented, making the server vulnerable to resource exhaustion attacks through deeply nested queries. These features should be disabled in production environments."
+        lang: "javascript"
+
+  - category: "Microservices Security"
+    id: "microservices-security"
+    description: "Microservices architectures introduce security challenges in service-to-service communication, authentication, and data flow."
+    challenges:
+      - id: "microservices-security-1"
+        title: "Missing Service-to-Service Authentication"
+        description: "This microservice makes internal API calls without authentication. What security issue exists?"
+        difficulty: 1 # Intermediate
+        code: |
+          @Service
+          public class OrderService {
+              
+              @Autowired
+              private RestTemplate restTemplate;
+              
+                        public User getUserDetails(String userId) {
+              String url = "http://user-service:8081/api/users/" + userId;
+              
+              ResponseEntity<User> response = restTemplate.getForEntity(url, User.class);
+              return response.getBody();
+          }
+
+          public Payment processPayment(PaymentRequest request) {
+              String url = "http://payment-service:8082/api/payments";
+              
+              ResponseEntity<Payment> response = restTemplate.postForEntity(url, request, Payment.class);
+              return response.getBody();
+          }
+          }
+        options:
+          - "The service doesn't authenticate internal calls"
+          - "The service doesn't validate responses"
+          - "The service doesn't use secure communication"
+          - "All of the above"
+        correctAnswer: "All of the above"
+        hint: "What prevents unauthorized services from calling these internal endpoints?"
+        explanation: "The microservice has multiple security vulnerabilities: 1) It doesn't authenticate internal service-to-service calls, allowing any service to potentially access user data or process payments, 2) It doesn't validate responses from other services, potentially accepting malicious or corrupted data, and 3) It doesn't use secure communication (HTTPS/TLS), making the inter-service communication vulnerable to interception and tampering. Service-to-service communication should use mutual TLS authentication and proper authorization."
+        lang: "java"
+
+  - category: "Container Security"
+    id: "container-security"
+    description: "Containerized applications have security challenges related to image security, runtime privileges, and network isolation."
+    challenges:
+      - id: "container-security-1"
+        title: "Container Running as Root"
+        description: "This Docker container configuration has security issues. What vulnerability exists?"
+        difficulty: 1 # Intermediate
+        code: |
+          FROM node:16-alpine
+
+          WORKDIR /app
+
+          COPY package*.json ./
+          RUN npm install
+
+          COPY . .
+
+          USER root
+
+          EXPOSE 3000 8080 9000
+
+          CMD ["node", "app.js"]
+        options:
+          - "The container runs as root user"
+          - "The container exposes unnecessary ports"
+          - "The container doesn't follow security best practices"
+          - "All of the above"
+        correctAnswer: "All of the above"
+        hint: "What security risks exist when a container runs with root privileges?"
+        explanation: "The Docker container configuration has multiple security issues: 1) It runs as root user, giving the container process full system privileges that could be exploited if the container is compromised, 2) It exposes unnecessary ports (3000, 8080, 9000) increasing the attack surface, and 3) It doesn't follow security best practices like using a non-root user, minimal base images, or security scanning. Running containers as root can lead to privilege escalation attacks if the container is breached."
+        lang: "dockerfile"
+
+  - category: "Database Security"
+    id: "database-security"
+    description: "Database systems have security challenges including access control, data encryption, and query security."
+    challenges:
+      - id: "database-security-1"
+        title: "Excessive Database Permissions"
+        description: "This database user has overly broad permissions. What security issue exists?"
+        difficulty: 1 # Intermediate
+        code: |
+          CREATE USER 'app_user'@'%' IDENTIFIED BY 'weak_password';
+
+          GRANT ALL PRIVILEGES ON *.* TO 'app_user'@'%';
+
+          GRANT ALL PRIVILEGES ON mysql.* TO 'app_user'@'%';
+
+          FLUSH PRIVILEGES;
+        options:
+          - "The user has excessive database permissions"
+          - "The user can access system databases"
+          - "The user can connect from any host"
+          - "All of the above"
+        correctAnswer: "All of the above"
+        hint: "What principle of security is violated by granting all privileges?"
+        explanation: "The database user configuration violates multiple security principles: 1) The user has excessive permissions with 'ALL PRIVILEGES ON *.*' which grants access to all databases and tables, 2) The user can access system databases including the mysql database, potentially compromising database integrity, and 3) The user can connect from any host ('%') making the database accessible from anywhere on the network. This violates the principle of least privilege and creates a significant security risk if the user credentials are compromised."
+        lang: "sql"
+
+  - category: "Network Security"
+    id: "network-security"
+    description: "Network-level security challenges include protocol vulnerabilities, traffic analysis, and network configuration issues."
+    challenges:
+      - id: "network-security-1"
+        title: "Insecure Network Configuration"
+        description: "This network configuration allows unrestricted access. What security issue exists?"
+        difficulty: 1 # Intermediate
+        code: |
+          iptables -F
+          iptables -X
+          iptables -t nat -F
+          iptables -t nat -X
+          iptables -t mangle -F
+          iptables -t mangle -X
+
+          iptables -P INPUT ACCEPT
+          iptables -P FORWARD ACCEPT
+          iptables -P OUTPUT ACCEPT
+        options:
+          - "The firewall allows all incoming connections"
+          - "The firewall doesn't log network activity"
+          - "The firewall doesn't implement security policies"
+          - "All of the above"
+        correctAnswer: "All of the above"
+        hint: "What security risks exist when all network traffic is allowed?"
+        explanation: "The network configuration has multiple security vulnerabilities: 1) The firewall allows all incoming connections by setting INPUT policy to ACCEPT, making the system accessible to any network traffic, 2) No logging is implemented, so network activity and potential attacks go undetected, and 3) No security policies are enforced, leaving the system vulnerable to various network-based attacks. This configuration essentially disables all network security protections and should never be used in production environments."
+        lang: "bash"
+
+  - category: "Authentication Bypass"
+    id: "auth-bypass"
+    description: "Authentication bypass vulnerabilities allow attackers to access protected resources without proper credentials."
+    challenges:
+      - id: "auth-bypass-1"
+        title: "Weak Session Validation"
+        description: "This session validation function has a security flaw. What vulnerability exists?"
+        difficulty: 1 # Intermediate
+        code: |
+          def validate_session(session_token):
+              if not session_token:
+                  return False
+              
+                        if session_token in active_sessions:
+              return True
+              
+              return False
+        options:
+          - "The function doesn't check session expiration"
+          - "The function doesn't validate session context"
+          - "The function only checks token existence"
+          - "All of the above"
+        correctAnswer: "All of the above"
+        hint: "What prevents an attacker from using a stolen session token?"
+        explanation: "The session validation function has multiple security weaknesses: 1) It doesn't check if the session has expired, allowing old tokens to remain valid indefinitely, 2) It doesn't validate the session context (IP address, user agent, etc.), making it vulnerable to session hijacking, and 3) It only checks if the token exists without verifying its validity or integrity. Proper session validation should include expiration checks, context validation, and cryptographic verification."
+        lang: "python"
+
+  - category: "Data Exposure"
+    id: "data-exposure"
+    description: "Data exposure vulnerabilities occur when sensitive information is accidentally or intentionally disclosed."
+    challenges:
+      - id: "data-exposure-1"
+        title: "Sensitive Data in Logs"
+        description: "This logging function records sensitive information. What security issue exists?"
+        difficulty: 0 # Beginner
+        code: |
+          func logUserActivity(userID string, action string, data map[string]interface{}) {
+              log.Printf("User %s performed action %s with data: %+v", userID, action, data)
+              
+              if action == "login" {
+                  log.Printf("Login attempt for user %s with password: %s", userID, data["password"])
+              }
+              
+              if action == "payment" {
+                  log.Printf("Payment processed for user %s: %+v", userID, data)
+              }
+          }
+        options:
+          - "The function logs sensitive user data"
+          - "The function logs passwords in plain text"
+          - "The function doesn't sanitize log output"
+          - "All of the above"
+        correctAnswer: "All of the above"
+        hint: "What happens to sensitive data when it's written to log files?"
+        explanation: "The logging function has multiple security issues: 1) It logs sensitive user data including payment information and personal details, 2) It logs passwords in plain text, which is a major security violation, and 3) It doesn't sanitize log output, potentially exposing sensitive information to anyone with access to log files. Logs should never contain passwords, credit card numbers, or other sensitive data, and should be properly secured and rotated."
+        lang: "go"
+
+  - category: "Input Validation"
+    id: "input-validation"
+    description: "Input validation vulnerabilities occur when applications fail to properly validate and sanitize user input."
+    challenges:
+      - id: "input-validation-1"
+        title: "Missing Input Sanitization"
+        description: "This function processes user input without validation. What security issue exists?"
+        difficulty: 0 # Beginner
+        code: |
+          function processUserInput(input) {
+              const processedInput = input.trim();
+              
+              document.getElementById('output').innerHTML = processedInput;
+              
+              const query = `SELECT * FROM users WHERE name = '${processedInput}'`;
+              
+              const filePath = `/uploads/${processedInput}`;
+              
+              return processedInput;
+          }
+        options:
+          - "The function doesn't validate input format"
+          - "The function doesn't sanitize HTML output"
+          - "The function is vulnerable to multiple injection attacks"
+          - "All of the above"
+        correctAnswer: "All of the above"
+        hint: "What happens if the input contains malicious code or special characters?"
+        explanation: "The function has multiple input validation vulnerabilities: 1) It doesn't validate input format, allowing any type of input to be processed, 2) It doesn't sanitize HTML output, making it vulnerable to XSS attacks when setting innerHTML, and 3) It's vulnerable to multiple injection attacks including SQL injection (when building the query string) and path traversal (when constructing the file path). The function should validate, sanitize, and parameterize all user inputs."
+        lang: "javascript"
+
+  - category: "Privilege Escalation"
+    id: "privilege-escalation"
+    description: "Privilege escalation vulnerabilities allow attackers to gain higher levels of access than intended."
+    challenges:
+      - id: "privilege-escalation-1"
+        title: "Insecure Role Assignment"
+        description: "This function allows users to modify their own roles. What security vulnerability exists?"
+        difficulty: 2 # Advanced
+        code: |
+          @PostMapping("/api/users/update-role")
+          public ResponseEntity<?> updateUserRole(@RequestBody RoleUpdateRequest request) {
+              User currentUser = getCurrentUser();
+              
+              if (request.getUserId().equals(currentUser.getId())) {
+                  currentUser.setRole(request.getNewRole());
+                  userService.save(currentUser);
+                  
+                  return ResponseEntity.ok("Role updated successfully");
+              }
+              
+              return ResponseEntity.forbidden().body("Cannot modify other users");
+          }
+        options:
+          - "Users can escalate their own privileges"
+          - "The function doesn't validate role permissions"
+          - "The function doesn't check role hierarchy"
+          - "All of the above"
+        correctAnswer: "All of the above"
+        hint: "What prevents a regular user from assigning themselves admin privileges?"
+        explanation: "The function has multiple privilege escalation vulnerabilities: 1) Users can escalate their own privileges by changing their role to any value they want, 2) The function doesn't validate role permissions, allowing users to assign themselves roles they shouldn't have access to, and 3) The function doesn't check role hierarchy, so a regular user could potentially assign themselves admin or superuser privileges. Role changes should require proper authorization and follow the principle of least privilege."
+        lang: "java"
