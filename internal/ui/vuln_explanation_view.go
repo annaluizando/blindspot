@@ -15,11 +15,11 @@ import (
 	"blindspot/internal/utils"
 )
 
-// messages used to navigate after showing vulnerability explanation
+// Navigation messages
 type nextChallengeMsg struct{}
 type backToMenuMsg struct{}
 
-// defines keybindings for the explanation view
+// ExplanationKeyMap defines keybindings for the explanation view
 type ExplanationKeyMap struct {
 	ScrollUp   key.Binding
 	ScrollDown key.Binding
@@ -29,6 +29,7 @@ type ExplanationKeyMap struct {
 	Quit       key.Binding
 }
 
+// ExplanationView displays vulnerability explanations with scrolling support
 type ExplanationView struct {
 	gameState        *game.GameState
 	challenge        challenges.Challenge
@@ -44,6 +45,7 @@ type ExplanationView struct {
 	contentStr       string
 }
 
+// ExplanationKeys defines the key bindings for the explanation view
 var ExplanationKeys = ExplanationKeyMap{
 	ScrollUp: key.NewBinding(
 		key.WithKeys("k"),
@@ -71,15 +73,16 @@ var ExplanationKeys = ExplanationKeyMap{
 	),
 }
 
+// Styles for the explanation view
 var (
-	explanationSubtitleStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("#87D7FF")).Bold(true)
-	explanationHighlightStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#FAFA33")).Bold(true)
-	explanationTextStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("#DDDDDD"))
-	resourceStyle             = lipgloss.NewStyle().Foreground(lipgloss.Color("#87D7FF")).Underline(true)
-	completedStyle            = lipgloss.NewStyle().Foreground(lipgloss.Color("#5FFF87")).Bold(true)
+	explanationSubtitleStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("#0066CC")).Bold(true)      // Primary blue
+	explanationHighlightStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#00AA55")).Bold(true)      // Security green
+	explanationTextStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("#E0E0E0"))                 // Light text
+	resourceStyle             = lipgloss.NewStyle().Foreground(lipgloss.Color("#0066CC")).Underline(true) // Primary blue
+	completedStyle            = lipgloss.NewStyle().Foreground(lipgloss.Color("#00CC44")).Bold(true)      // Success green
 )
 
-// vulnerability explanation view
+// NewExplanationView creates a new explanation view
 func NewExplanationView(gs *game.GameState, challenge challenges.Challenge, width, height int, sourceMenu MenuType, isFromCompletion bool) *ExplanationView {
 	explanation, found := gs.GetVulnerabilityExplanation(gs.GetCurrentCategory())
 
@@ -96,19 +99,18 @@ func NewExplanationView(gs *game.GameState, challenge challenges.Challenge, widt
 		isFromCompletion: isFromCompletion,
 	}
 
-	viewportHeight := max(height-4, 5)
-	explanationView.viewport = viewport.New(width, viewportHeight)
+	explanationView.updateViewportDimensions()
 	explanationView.updateContent()
 
 	return explanationView
 }
 
+// Init initializes the explanation view
 func (v *ExplanationView) Init() tea.Cmd {
-	v.updateContent()
 	return nil
 }
 
-// handles messages and user input
+// Update handles messages and user input
 func (v *ExplanationView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
@@ -124,27 +126,7 @@ func (v *ExplanationView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return v, nil
 
 		case key.Matches(msg, ExplanationKeys.Next):
-			if v.isFromCompletion {
-				return v, func() tea.Msg {
-					return nextChallengeMsg{}
-				}
-			} else {
-				// If viewing from category menu, go back to category view
-				for i, set := range v.gameState.ChallengeSets {
-					if set.Category == v.gameState.GetCurrentCategory() {
-						return NewCategoryMenu(v.gameState, i, v.width, v.height, v.sourceMenu), nil
-					}
-				}
-			}
-
-			if v.sourceMenu == ChallengeMenu {
-				// Find the category index
-				for i, set := range v.gameState.ChallengeSets {
-					if set.Category == v.gameState.GetCurrentCategory() {
-						return NewCategoryMenu(v.gameState, i, v.width, v.height, v.sourceMenu), nil
-					}
-				}
-			}
+			return v.handleNextAction()
 
 		case key.Matches(msg, keys.ScrollUp):
 			v.viewport.LineUp(1)
@@ -153,38 +135,79 @@ func (v *ExplanationView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			v.viewport.LineDown(1)
 
 		case key.Matches(msg, ExplanationKeys.Back):
-			if v.sourceMenu == ChallengeMenu {
-				// Find the category index
-				for i, set := range v.gameState.ChallengeSets {
-					if set.Category == v.gameState.GetCurrentCategory() {
-						return NewCategoryMenu(v.gameState, i, v.width, v.height, v.sourceMenu), nil
-					}
-				}
-			}
-
-			// Otherwise, return to main menu
-			return v, func() tea.Msg {
-				return backToMenuMsg{}
-			}
+			return v.handleBackAction()
 		}
 
 	case tea.WindowSizeMsg:
 		v.width = msg.Width
 		v.height = msg.Height
-
-		viewportHeight := max(v.height-4, 5)
-		v.viewport.Width = msg.Width
-		v.viewport.Height = viewportHeight
+		v.updateViewportDimensions()
 	}
 
 	v.viewport, cmd = v.viewport.Update(msg)
 	return v, cmd
 }
 
+// handleNextAction handles the next action based on context
+func (v *ExplanationView) handleNextAction() (tea.Model, tea.Cmd) {
+	if v.isFromCompletion {
+		return v, func() tea.Msg {
+			return nextChallengeMsg{}
+		}
+	}
+
+	// Return to category view
+	return v.navigateToCategoryView()
+}
+
+// handleBackAction handles the back action based on context
+func (v *ExplanationView) handleBackAction() (tea.Model, tea.Cmd) {
+	if v.sourceMenu == ChallengeMenu {
+		return v.navigateToCategoryView()
+	}
+
+	// Return to main menu
+	return v, func() tea.Msg {
+		return backToMenuMsg{}
+	}
+}
+
+// navigateToCategoryView navigates back to the category view
+func (v *ExplanationView) navigateToCategoryView() (tea.Model, tea.Cmd) {
+	for i, set := range v.gameState.ChallengeSets {
+		if set.Category == v.gameState.GetCurrentCategory() {
+			return NewCategoryMenu(v.gameState, i, v.width, v.height, v.sourceMenu), nil
+		}
+	}
+	return v, nil
+}
+
+// updateViewportDimensions updates the viewport dimensions
+func (v *ExplanationView) updateViewportDimensions() {
+	viewportHeight := max(v.height-4, 5)
+	v.viewport = viewport.New(v.width, viewportHeight)
+}
+
+// updateContent updates the content and viewport
 func (v *ExplanationView) updateContent() {
 	var b strings.Builder
 
-	// Add scroll indicator if needed
+	// Header section
+	v.buildHeader(&b)
+
+	if v.explanationFound {
+		v.buildExplanationContent(&b)
+	} else {
+		v.buildNoExplanationContent(&b)
+	}
+
+	v.buildHelpSection(&b)
+
+	v.contentStr = b.String()
+	v.updateViewportContent()
+}
+
+func (v *ExplanationView) buildHeader(b *strings.Builder) {
 	if v.isFromCompletion {
 		b.WriteString(completedStyle.Render("🎉 Challenge Completed!") + "\n\n")
 		b.WriteString(fmt.Sprintf("You've completed: %s\n\n", selectedItemStyle.Render(v.challenge.Title)))
@@ -193,29 +216,37 @@ func (v *ExplanationView) updateContent() {
 	}
 
 	b.WriteString(fmt.Sprintf("%s\n\n", explanationHighlightStyle.Render(v.gameState.GetCurrentCategory())))
+}
 
-	if v.explanationFound {
-		b.WriteString(explanationSubtitleStyle.Render("What is this vulnerability?") + "\n")
-		wrappedDesc := utils.WrapText(v.explanation.ShortDescription, v.width)
-		b.WriteString(descriptionStyle.Render(wrappedDesc) + "\n\n")
+func (v *ExplanationView) buildExplanationContent(b *strings.Builder) {
+	b.WriteString(explanationSubtitleStyle.Render("What is this vulnerability?") + "\n")
+	wrappedDesc := utils.WrapText(v.explanation.ShortDescription, v.width)
+	b.WriteString(descriptionStyle.Render(wrappedDesc) + "\n\n")
 
-		b.WriteString(explanationSubtitleStyle.Render("Learn More:") + "\n")
-		wrappedExplanation := utils.WrapText(v.explanation.Explanation, v.width)
-		b.WriteString(explanationTextStyle.Render(wrappedExplanation) + "\n\n")
+	b.WriteString(explanationSubtitleStyle.Render("Learn More:") + "\n")
+	wrappedExplanation := utils.WrapText(v.explanation.Explanation, v.width)
+	b.WriteString(explanationTextStyle.Render(wrappedExplanation) + "\n\n")
 
-		if len(v.explanation.Resources) > 0 {
-			b.WriteString(explanationSubtitleStyle.Render("Additional Resources:") + "\n")
-			for _, resource := range v.explanation.Resources {
-				b.WriteString(fmt.Sprintf("- %s: %s\n",
-					resource.Title,
-					resourceStyle.Render(resource.URL)))
-			}
-			b.WriteString("\n")
-		}
-	} else {
-		b.WriteString(errorStyle.Render("Detailed explanation for this vulnerability category is not available yet.") + "\n\n")
+	if len(v.explanation.Resources) > 0 {
+		v.buildResourcesSection(b)
 	}
+}
 
+func (v *ExplanationView) buildNoExplanationContent(b *strings.Builder) {
+	b.WriteString(errorStyle.Render("Detailed explanation for this vulnerability category is not available yet.") + "\n\n")
+}
+
+func (v *ExplanationView) buildResourcesSection(b *strings.Builder) {
+	b.WriteString(explanationSubtitleStyle.Render("Additional Resources:") + "\n")
+	for _, resource := range v.explanation.Resources {
+		b.WriteString(fmt.Sprintf("- %s: %s\n",
+			resource.Title,
+			resourceStyle.Render(resource.URL)))
+	}
+	b.WriteString("\n")
+}
+
+func (v *ExplanationView) buildHelpSection(b *strings.Builder) {
 	if v.showHelp {
 		b.WriteString("\n" + v.help.View(ExplanationKeys))
 	} else if v.isFromCompletion {
@@ -224,57 +255,72 @@ func (v *ExplanationView) updateContent() {
 	} else {
 		b.WriteString("\n" + helpHintStyle.Render("Press ? for help"))
 	}
+}
 
+func (v *ExplanationView) updateViewportContent() {
 	helpHeight := 1
 	if v.showHelp {
-		helpHeight = 4 // Full help takes vore space
+		helpHeight = 4
 	}
 
-	// Create or update the viewport
-	v.contentStr = b.String()
 	contentHeight := strings.Count(v.contentStr, "\n") + 1
-
-	// If content is shorter than available height, no scrolling needed
 	viewportHeight := min(contentHeight, v.height-helpHeight-1)
 
 	v.viewport = viewport.New(v.width, viewportHeight)
 	v.viewport.SetContent(v.contentStr)
 }
 
-// renders vulnerability explanation
 func (v *ExplanationView) View() string {
 	var b strings.Builder
+
 	b.WriteString(v.viewport.View())
 
-	hasScroll := v.viewport.YOffset > 0 || v.viewport.YOffset+v.viewport.Height < strings.Count(v.contentStr, "\n")+1
-	if hasScroll {
-		// v.viewport.YOffset+1, // current user line
-		// strings.Count(v.contentStr, "\n")+1) // total lines
-		b.WriteString("\n" + dimStyle.Render("j/k to scroll"))
-	}
+	v.buildScrollIndicator(&b)
 
-	// Help
-	if v.showHelp {
-		b.WriteString("\n" + v.help.View(MenuKeys))
-	} else {
-		helpText := "Press ? for help | ↑/↓ to navigate | j/k to scroll"
-		if v.width < 60 {
-			helpText = "? for help | ↑/↓ nav | j/k scroll"
-		}
-		if !hasScroll {
-			helpText = strings.Replace(helpText, " | j/k to scroll", "", 1)
-		}
-		b.WriteString("\n" + helpHintStyle.Render(helpText))
-	}
+	v.buildHelpFooter(&b)
 
 	return b.String()
 }
 
-// ---- helpers ----
+func (v *ExplanationView) buildScrollIndicator(b *strings.Builder) {
+	hasScroll := v.viewport.YOffset > 0 || v.viewport.YOffset+v.viewport.Height < strings.Count(v.contentStr, "\n")+1
+	if hasScroll {
+		b.WriteString("\n" + dimStyle.Render("j/k to scroll"))
+	}
+}
+
+func (v *ExplanationView) buildHelpFooter(b *strings.Builder) {
+	if v.showHelp {
+		b.WriteString("\n" + v.help.View(MenuKeys))
+	} else {
+		v.buildHelpText(b)
+	}
+}
+
+func (v *ExplanationView) buildHelpText(b *strings.Builder) {
+	hasScroll := v.viewport.YOffset > 0 || v.viewport.YOffset+v.viewport.Height < strings.Count(v.contentStr, "\n")+1
+
+	helpText := "Press ? for help | ↑/↓ to navigate"
+	if hasScroll {
+		helpText += " | j/k to scroll"
+	}
+
+	if v.width < 60 {
+		helpText = "? for help | ↑/↓ nav"
+		if hasScroll {
+			helpText += " | j/k scroll"
+		}
+	}
+
+	b.WriteString("\n" + helpHintStyle.Render(helpText))
+}
+
+// ShortHelp returns the short help key bindings
 func (k ExplanationKeyMap) ShortHelp() []key.Binding {
 	return []key.Binding{k.Help, k.Quit}
 }
 
+// FullHelp returns the full help key bindings
 func (k ExplanationKeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{k.Next, k.Back},

@@ -1,124 +1,139 @@
 package ui
 
-import (
-	"github.com/charmbracelet/lipgloss"
-)
-
-// Main color palette
-var (
-	primaryColor   = lipgloss.Color("#4BA8FF")
-	secondaryColor = lipgloss.Color("#05B3FF")
-	accentColor    = lipgloss.Color("#FFDB58")
-	successColor   = lipgloss.Color("#00FF00")
-	errorColor     = lipgloss.Color("#FF4040")
-	textColor      = lipgloss.Color("#FFFFFF")
-	mutedColor     = lipgloss.Color("#888888")
-)
+import "github.com/charmbracelet/lipgloss"
 
 var (
-	categoryStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("170")). // Purple
+	primaryColor   = lipgloss.Color("#0066CC") // Deep blue
+	secondaryColor = lipgloss.Color("#00AA55")
+	accentColor    = lipgloss.Color("#FF8800") // Warning orange
+	textColor      = lipgloss.Color("#E0E0E0") // Light gray (works on both light/dark)
+	mutedColor     = lipgloss.Color("#888888") // Medium gray
+	successColor   = lipgloss.Color("#00CC44") // Success green
+	errorColor     = lipgloss.Color("#CC3333") // Error red
+	warningColor   = lipgloss.Color("#FFAA00") // Warning yellow
+)
+
+// Common styles
+var (
+	// Base text styles
+	baseTextStyle = lipgloss.NewStyle().
+			Foreground(textColor).
+			MarginBottom(1)
+
+	// Title and header styles
+	titleStyle = lipgloss.NewStyle().
+			Foreground(primaryColor).
+			Bold(true).
+			MarginBottom(1).
+			Padding(0, 1)
+
+	subtitleStyle = lipgloss.NewStyle().
+			Foreground(secondaryColor).
+			Bold(true).
+			MarginBottom(1)
+
+	// Description styles
+	descriptionStyle = lipgloss.NewStyle().
+				Foreground(textColor).
+				Italic(true).
+				MarginBottom(1)
+
+	descStyle = lipgloss.NewStyle().
+			Foreground(textColor).
+			MarginBottom(1).
+			Padding(0, 1)
+
+	itemDescriptionStyle = lipgloss.NewStyle().
+				Foreground(mutedColor).
+				Italic(true).
+				Padding(0, 4)
+
+	// Code display
+	codeBoxStyle = lipgloss.NewStyle().
+			Padding(1, 5).
+			MarginBottom(1)
+
+	// Selection styles
+	selectedItemStyle = lipgloss.NewStyle().
+				Foreground(primaryColor).
+				Bold(true)
+
+	unselectedItemStyle = lipgloss.NewStyle().
+				Foreground(textColor)
+
+	itemStyle = lipgloss.NewStyle().
+			Foreground(textColor)
+
+	correctAnswerStyle = lipgloss.NewStyle().
+				Foreground(successColor).
+				Bold(true)
+
+	incorrectAnswerStyle = lipgloss.NewStyle().
+				Foreground(errorColor).
+				Bold(true)
+
+	// Status styles
+	successStyle = lipgloss.NewStyle().
+			Foreground(successColor).
+			Bold(true).
+			Padding(1).
+			BorderStyle(lipgloss.RoundedBorder()).
+			BorderForeground(successColor)
+
+	errorStyle = lipgloss.NewStyle().
+			Foreground(errorColor).
+			Bold(true).
+			Padding(1).
+			BorderStyle(lipgloss.RoundedBorder()).
+			BorderForeground(errorColor)
+
+	hintStyle = lipgloss.NewStyle().
+			Foreground(accentColor).
+			Italic(true).
+			Padding(1).
+			BorderStyle(lipgloss.RoundedBorder()).
+			BorderForeground(accentColor)
+
+	// Navigation and help styles
+	helpHintStyle = lipgloss.NewStyle().
+			Foreground(mutedColor).
+			Italic(true)
+
+	explanationStyle = lipgloss.NewStyle().
+				Foreground(accentColor).
+				Bold(true).
+				Padding(0, 1)
+
+	// Completion and progress styles
+	completionStyle = lipgloss.NewStyle().
+			Foreground(successColor).
 			Bold(true)
 
-	// Subtle style for separators
+	// Difficulty indicators - Security-themed colors
+	difficultyStyle = map[string]lipgloss.Style{
+		"beginner":     lipgloss.NewStyle().Foreground(lipgloss.Color("#00CC44")), // Security green
+		"intermediate": lipgloss.NewStyle().Foreground(lipgloss.Color("#FFAA00")), // Warning orange
+		"advanced":     lipgloss.NewStyle().Foreground(lipgloss.Color("#CC3333")), // Alert red
+	}
+
+	// Category and navigation styles
+	categoryStyle = lipgloss.NewStyle().
+			Foreground(secondaryColor).
+			Bold(true).
+			Padding(0, 1)
+
+	// Subtle elements
 	subtleStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("240"))
-	subtitleStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#888888"))
+			Foreground(mutedColor).
+			Italic(true)
+
+	// Dimmed text for secondary information
+	dimStyle = lipgloss.NewStyle().
+			Foreground(mutedColor).
+			Faint(true)
 )
 
-// challenge and menu titles
-var titleStyle = lipgloss.NewStyle().
-	Foreground(primaryColor).
-	Bold(true).
-	BorderForeground(secondaryColor).
-	Padding(0, 1).
-	MarginBottom(1)
-
-// challenge descriptions
-var descStyle = lipgloss.NewStyle().
-	Foreground(textColor).
-	MarginBottom(1).
-	MaxWidth(100).
-	Padding(0, 1)
-
-// menu descriptions
-var descriptionStyle = lipgloss.NewStyle().
-	Foreground(textColor).
-	MaxWidth(100).
-	Italic(true).
-	MarginBottom(1)
-
-// code display
-var codeBoxStyle = lipgloss.NewStyle().
-	Padding(1, 5).
-	MarginBottom(1).
-	MaxWidth(100)
-
-// selected items in multiple choice or menu
-var selectedItemStyle = lipgloss.NewStyle().
-	Foreground(primaryColor).
-	Bold(true)
-
-// unselected items in menu or multiple choice
-var itemStyle = lipgloss.NewStyle().
-	Foreground(textColor)
-
-// unselected items in list
-var unselectedItemStyle = lipgloss.NewStyle().
-	Foreground(textColor)
-
-// menu item descriptions when selected
-var itemDescriptionStyle = lipgloss.NewStyle().
-	Foreground(mutedColor).
-	Italic(true).
-	Padding(0, 4)
-
-// success message
-var successStyle = lipgloss.NewStyle().
-	Foreground(successColor).
-	Bold(true).
-	Padding(1).
-	BorderStyle(lipgloss.RoundedBorder()).
-	BorderForeground(successColor)
-
-// error/failure message
-var errorStyle = lipgloss.NewStyle().
-	Foreground(errorColor).
-	Bold(true).
-	Padding(1).
-	BorderStyle(lipgloss.RoundedBorder()).
-	BorderForeground(errorColor)
-
-// hints
-var hintStyle = lipgloss.NewStyle().
-	Foreground(accentColor).
-	Italic(true).
-	Padding(1).
-	BorderStyle(lipgloss.RoundedBorder()).
-	BorderForeground(accentColor)
-
-var explanationStyle = lipgloss.NewStyle().
-	Foreground(accentColor).
-	Bold(true).
-	Padding(0, 1)
-
-var helpHintStyle = lipgloss.NewStyle().
-	Foreground(mutedColor).
-	Italic(true)
-
-// completion indicator
-var completionStyle = lipgloss.NewStyle().
-	Foreground(successColor).
-	Bold(true)
-
-// difficulty indicators
-var difficultyStyle = map[string]lipgloss.Style{
-	"beginner":     lipgloss.NewStyle().Foreground(lipgloss.Color("#00FF00")), // Green
-	"intermediate": lipgloss.NewStyle().Foreground(lipgloss.Color("#FFFF00")), // Yellow
-	"advanced":     lipgloss.NewStyle().Foreground(lipgloss.Color("#FF0000")), // Red
-}
-
+// RenderBox creates a styled box with optional title
 func RenderBox(content string, title string) string {
 	boxStyle := lipgloss.NewStyle().
 		BorderStyle(lipgloss.RoundedBorder()).

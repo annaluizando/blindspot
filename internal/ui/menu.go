@@ -8,14 +8,11 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 
 	"blindspot/internal/challenges"
 	"blindspot/internal/game"
 	"blindspot/internal/utils"
 )
-
-var dimStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
 
 type MenuType int
 
@@ -331,9 +328,9 @@ func (m *MenuView) View() string {
 	if m.showHelp {
 		b.WriteString("\n" + m.help.View(MenuKeys))
 	} else {
-		helpText := "Press ? for help | ↑/↓ to navigate | j/k to scroll"
+		helpText := "Press ? for help | ↑/↓ to navigate"
 		if m.width < 60 {
-			helpText = "? for help | ↑/↓ nav | j/k scroll"
+			helpText = "? for help | ↑/↓ nav"
 		}
 		b.WriteString("\n" + helpHintStyle.Render(helpText))
 	}

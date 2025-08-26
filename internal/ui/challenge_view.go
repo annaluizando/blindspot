@@ -31,19 +31,19 @@ type keyMap struct {
 var keys = keyMap{
 	Up: key.NewBinding(
 		key.WithKeys("up"),
-		key.WithHelp("↑", "move up"),
+		key.WithHelp("↑", "select previous option"),
 	),
 	Down: key.NewBinding(
 		key.WithKeys("down"),
-		key.WithHelp("↓", "move down"),
+		key.WithHelp("↓", "select next option"),
 	),
 	ScrollUp: key.NewBinding(
 		key.WithKeys("k"),
-		key.WithHelp("k", "scroll up"),
+		key.WithHelp("k", "scroll content up"),
 	),
 	ScrollDown: key.NewBinding(
 		key.WithKeys("j"),
-		key.WithHelp("j", "scroll down"),
+		key.WithHelp("j", "scroll content down"),
 	),
 	Select: key.NewBinding(
 		key.WithKeys("enter", "space"),
@@ -179,17 +179,13 @@ func (m *ChallengeView) updateContent() {
 		if m.hasAnswered && m.isCorrect {
 			if option == m.challenge.CorrectAnswer {
 				cursor = "✓ "
-				successStyleCopy := successStyle
-				successStyleCopy = successStyleCopy.Bold(false)
-				renderedOption = cursor + successStyleCopy.Render(option)
+				renderedOption = cursor + correctAnswerStyle.Render(option)
 			} else {
 				renderedOption = cursor + unselectedItemStyle.Render(option)
 			}
 		} else if m.hasAnswered && !m.isCorrect && i == m.cursor {
 			cursor = "✗ "
-			errorStyleCopy := errorStyle
-			errorStyleCopy = errorStyleCopy.Bold(false)
-			renderedOption = cursor + errorStyleCopy.Render(option)
+			renderedOption = cursor + incorrectAnswerStyle.Render(option)
 		} else if !m.hasAnswered {
 			if m.cursor == i {
 				cursor = "> "
@@ -316,6 +312,7 @@ func (m *ChallengeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.result = ""
 				}
 				m.updateContent()
+				m.ensureCursorVisible()
 			}
 
 		case key.Matches(msg, keys.Down):
@@ -326,15 +323,18 @@ func (m *ChallengeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.result = ""
 				}
 				m.updateContent()
+				m.ensureCursorVisible()
 			}
 
 		case key.Matches(msg, keys.ScrollUp):
-			if m.viewport.YOffset > 0 {
+			if !m.hasAnswered || m.showHelp {
 				m.viewport.LineUp(1)
 			}
 
 		case key.Matches(msg, keys.ScrollDown):
-			m.viewport.LineDown(1)
+			if !m.hasAnswered || m.showHelp {
+				m.viewport.LineDown(1)
+			}
 
 		case key.Matches(msg, keys.Select):
 			m.hasAnswered = true
@@ -353,6 +353,8 @@ func (m *ChallengeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.gameState.AddErrorCount(currentCategory)
 			}
 			m.updateContent()
+			// Focus on the result and explanation after answering
+			m.focusOnResult()
 		}
 
 	case tea.WindowSizeMsg:
@@ -364,7 +366,6 @@ func (m *ChallengeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.updateContent()
 	}
 
-	// Handle viewport updates
 	m.viewport, cmd = m.viewport.Update(msg)
 	return m, cmd
 }
@@ -378,13 +379,12 @@ func (m *ChallengeView) View() string {
 
 	b.WriteString("\n")
 
-	// The help text
 	if m.showHelp {
 		b.WriteString(m.help.View(MenuKeys))
 	} else {
-		helpText := "Press ? for help | ↑/↓ to navigate"
+		helpText := "Press ? for help | ↑/↓ to select option"
 		if hasScroll {
-			helpText += " | j/k to scroll"
+			helpText += " | j/k to scroll content"
 		}
 		b.WriteString(helpHintStyle.Render(helpText))
 	}
@@ -392,7 +392,7 @@ func (m *ChallengeView) View() string {
 	return b.String()
 }
 
-// ----helpers----
+// Helper methods
 func (k keyMap) ShortHelp() []key.Binding {
 	return []key.Binding{k.Help, k.Quit}
 }
@@ -405,4 +405,73 @@ func (k keyMap) FullHelp() [][]key.Binding {
 		{k.Help, k.Quit},
 		{k.ShowHint, k.Next},
 	}
+}
+
+// ensureCursorVisible ensures the selected option is visible in the viewport
+func (m *ChallengeView) ensureCursorVisible() {
+	// Find the position of the options section in the content
+	optionsStartMarker := "What vulnerability is in this code?"
+	optionsPos := strings.Index(m.contentStr, optionsStartMarker)
+
+	if optionsPos == -1 {
+		return
+	}
+
+	// Calculate the line number where options start
+	linesBeforeOptions := strings.Count(m.contentStr[:optionsPos], "\n")
+
+	// Calculate the line number of the selected option
+	selectedOptionLine := linesBeforeOptions + 2 + m.cursor
+
+	// Get current viewport dimensions
+	viewportHeight := m.viewport.Height
+	currentOffset := m.viewport.YOffset
+
+	// Position the selected option with padding for context
+	padding := 2
+	idealOffset := max(selectedOptionLine-padding, 0)
+
+	// Ensure we don't scroll past the end of content
+	maxOffset := max(strings.Count(m.contentStr, "\n")-viewportHeight+1, 0)
+	if idealOffset > maxOffset {
+		idealOffset = maxOffset
+	}
+
+	// Only scroll if the selected option is not properly visible
+	if selectedOptionLine < currentOffset || selectedOptionLine >= currentOffset+viewportHeight {
+		m.viewport.SetYOffset(idealOffset)
+	}
+}
+
+// focusOnResult focuses the viewport on the result and explanation after answering
+func (m *ChallengeView) focusOnResult() {
+	// Find the position of the result section
+	resultMarker := "✓ Correct! You've identified the vulnerability."
+	if !m.isCorrect {
+		resultMarker = "✗ Incorrect. Try another option by moving arrow keys!"
+	}
+
+	resultPos := strings.Index(m.contentStr, resultMarker)
+	if resultPos == -1 {
+		return
+	}
+
+	// Calculate the line number where the result starts
+	resultLine := strings.Count(m.contentStr[:resultPos], "\n")
+
+	// Get current viewport dimensions
+	viewportHeight := m.viewport.Height
+
+	// Position the result near the top of the viewport with some padding
+	padding := 1
+	idealOffset := max(resultLine-padding, 0)
+
+	// Ensure we don't scroll past the end of content
+	maxOffset := max(strings.Count(m.contentStr, "\n")-viewportHeight+1, 0)
+	if idealOffset > maxOffset {
+		idealOffset = maxOffset
+	}
+
+	// Scroll to show the result
+	m.viewport.SetYOffset(idealOffset)
 }
