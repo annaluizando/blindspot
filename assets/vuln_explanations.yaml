@@ -320,3 +320,232 @@ vulnerabilities:
         url: "https://owasp.org/Top10/A10_2021-Server-Side_Request_Forgery_%28SSRF%29/"
       - title: "PortSwigger SSRF Cheat Sheet"
         url: "https://portswigger.net/web-security/ssrf"
+
+  - name: "Cross-Site Scripting (XSS)"
+    short_description: "XSS vulnerabilities allow attackers to inject malicious scripts into web pages viewed by other users."
+    explanation: |
+      Cross-Site Scripting (XSS) vulnerabilities occur when untrusted data is included in dynamic content sent to a user's browser without proper validation or encoding. This allows attackers to execute malicious scripts in the context of other users' sessions.
+
+      There are three main types of XSS:
+
+      1. Reflected XSS:
+         - Malicious scripts are reflected off a web server
+         - The script is embedded in a URL or form submission
+         - The server includes the script in the response
+         - Example: Search results that display user input without encoding
+
+      2. Stored XSS:
+         - Malicious scripts are stored in a database or other persistent storage
+         - The script is executed when other users view the stored content
+         - Example: Comments, forum posts, or user profiles containing malicious code
+
+      3. DOM-based XSS:
+         - The vulnerability exists in client-side code
+         - Malicious scripts manipulate the DOM environment
+         - Example: JavaScript that reads from URL parameters and writes to the page
+
+      XSS attacks can lead to:
+      - Session hijacking and account takeover
+      - Theft of sensitive data (cookies, tokens, personal information)
+      - Defacement of websites
+      - Redirection to malicious sites
+      - Execution of unwanted actions on behalf of the user
+
+      Prevention strategies:
+      - Output encoding: Always encode user input before displaying it
+      - Input validation: Validate and sanitize all user input
+      - Content Security Policy (CSP): Implement strict CSP headers
+      - HttpOnly cookies: Mark sensitive cookies as HttpOnly
+      - Regular security testing: Use automated tools and manual testing
+      - Framework security: Use frameworks with built-in XSS protection
+      - Context-aware encoding: Use appropriate encoding for different contexts (HTML, JavaScript, CSS, URLs)
+    resources:
+      - title: "OWASP Top 10: Cross-Site Scripting (XSS)"
+        url: "https://owasp.org/Top10/A03_2021-Injection/"
+      - title: "OWASP XSS Prevention Cheat Sheet"
+        url: "https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html"
+      - title: "PortSwigger XSS Cheat Sheet"
+        url: "https://portswigger.net/web-security/cross-site-scripting"
+
+  - name: "Cross-Site Request Forgery (CSRF)"
+    short_description: "CSRF attacks force authenticated users to perform unwanted actions on a web application."
+    explanation: |
+      Cross-Site Request Forgery (CSRF) is an attack that forces authenticated users to perform unwanted actions on a web application in which they're currently authenticated. Unlike XSS, CSRF doesn't require the attacker to inject malicious code into the application.
+
+      How CSRF works:
+      - The attacker creates a malicious website or email
+      - The malicious site contains a form or script that submits to the target application
+      - When the victim visits the malicious site while authenticated to the target application, the request is sent with their authentication credentials
+      - The target application processes the request as if it came from the legitimate user
+
+      Common CSRF attack scenarios:
+      - Changing email addresses or passwords
+      - Making financial transactions
+      - Adding or modifying user data
+      - Deleting accounts or content
+      - Performing administrative actions
+
+      CSRF attacks are particularly dangerous because:
+      - They can be executed without the user's knowledge
+      - They leverage the user's existing authentication
+      - They can bypass many traditional security measures
+      - They're often invisible to the user
+
+      Prevention strategies:
+      - CSRF tokens: Include unique, unpredictable tokens in all forms and AJAX requests
+      - SameSite cookies: Use SameSite=Strict or SameSite=Lax for cookies
+      - Custom headers: Require custom headers that can't be set by browsers
+      - Double submit cookies: Validate tokens in both cookies and request parameters
+      - Referrer validation: Check that requests come from expected origins
+      - State parameter: Use OAuth 2.0 state parameters for authorization flows
+      - Time-limited tokens: Expire CSRF tokens after a reasonable time period
+
+      Best practices:
+      - Implement CSRF protection on all state-changing operations
+      - Use framework-provided CSRF protection when available
+      - Test CSRF protection thoroughly during security assessments
+      - Consider the impact of CSRF on your specific application functionality
+      - Implement proper error handling for CSRF validation failures
+    resources:
+      - title: "OWASP Top 10: Cross-Site Request Forgery (CSRF)"
+        url: "https://owasp.org/Top10/A05_2021-Security_Misconfiguration/"
+      - title: "OWASP CSRF Prevention Cheat Sheet"
+        url: "https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html"
+      - title: "PortSwigger CSRF Cheat Sheet"
+        url: "https://portswigger.net/web-security/csrf"
+
+  - name: "Business Logic Vulnerabilities"
+    short_description: "Business logic vulnerabilities occur when application logic can be manipulated to bypass intended restrictions."
+    explanation: |
+      Business Logic Vulnerabilities are flaws in the application's logic flow that allow attackers to bypass intended 
+      restrictions or manipulate the application's behavior in unintended ways. Unlike traditional security vulnerabilities that exploit technical weaknesses, 
+      these flaws exist in the application's business rules and decision-making processes.
+
+      Common types of business logic vulnerabilities:
+
+      1. Price manipulation:
+         - Bypassing price validation
+         - Manipulating quantity or discount calculations
+         - Exploiting race conditions in pricing
+
+      2. Workflow bypasses:
+         - Skipping required steps in multi-step processes
+         - Bypassing approval workflows
+         - Manipulating state transitions
+
+      3. Resource exhaustion:
+         - Exploiting rate limiting weaknesses
+         - Manipulating resource allocation
+         - Bypassing usage quotas
+
+      4. Authentication bypasses:
+         - Circumventing multi-factor authentication
+         - Exploiting password reset logic
+         - Manipulating session management
+
+      5. Authorization flaws:
+         - Elevating privileges through logic manipulation
+         - Bypassing role-based access controls
+         - Exploiting permission inheritance
+
+      Why business logic vulnerabilities are dangerous:
+      - They're often difficult to detect with automated tools
+      - They can bypass traditional security controls
+      - They may not trigger security alerts
+      - They can lead to significant financial or data loss
+      - They're often specific to the application's domain
+
+      Prevention strategies:
+      - Threat modeling: Identify critical business flows and potential bypasses
+      - Input validation: Validate all inputs at multiple layers
+      - State validation: Ensure application state is consistent and valid
+      - Business rule enforcement: Implement checks at multiple points
+      - Audit logging: Log all business-critical decisions and actions
+      - Rate limiting: Implement proper rate limiting and resource controls
+      - Transaction integrity: Use database transactions for multi-step processes
+      - Regular security reviews: Conduct manual testing of business logic flows
+
+      Testing approaches:
+      - Manual testing of all business workflows
+      - Boundary value testing for numeric inputs
+      - Race condition testing for concurrent operations
+      - State transition testing for multi-step processes
+      - Negative testing to identify bypass scenarios
+    resources:
+      - title: "OWASP Business Logic Vulnerabilities"
+        url: "https://owasp.org/www-community/vulnerabilities/Business_logic_vulnerability"
+      - title: "PortSwigger Business Logic Vulnerabilities"
+        url: "https://portswigger.net/web-security/logic-flaws"
+      - title: "OWASP Testing Guide: Business Logic Testing"
+        url: "https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/19-Business_Logic_Testing/"
+
+  - name: "API Security Vulnerabilities"
+    short_description: "Security flaws in APIs that can lead to unauthorized access, data exposure, and service abuse."
+    explanation: |
+      API Security Vulnerabilities are security flaws specific to Application Programming Interfaces (APIs) that can lead to unauthorized access, data exposure, service abuse, and other security breaches. APIs are particularly vulnerable because they often expose business logic and data directly to external clients, making them attractive targets for attackers.
+
+      Common types of API security vulnerabilities:
+
+      1. Authentication and Authorization flaws:
+         - Missing or weak API key validation
+         - Insufficient access controls
+         - Token-based authentication bypasses
+         - Privilege escalation through role manipulation
+
+      2. Input validation and injection:
+         - Mass assignment vulnerabilities
+         - Parameter pollution attacks
+         - SQL injection through API parameters
+         - NoSQL injection attacks
+
+      3. Rate limiting and abuse:
+         - Missing rate limiting controls
+         - Inadequate request throttling
+         - Brute force attack vulnerabilities
+         - Resource exhaustion attacks
+
+      4. Data exposure and privacy:
+         - Sensitive data in API responses
+         - Information disclosure through error messages
+         - Insecure data transmission
+         - Inadequate data sanitization
+
+      5. Configuration and deployment:
+         - Insecure API key storage
+         - Missing HTTPS enforcement
+         - Inadequate logging and monitoring
+         - CORS misconfigurations
+
+      Why API security vulnerabilities are dangerous:
+      - APIs often have direct access to backend systems and databases
+      - They can bypass traditional web application security controls
+      - They're frequently used by mobile apps and third-party integrations
+      - They can expose sensitive business logic and data
+      - They may not be protected by the same security measures as web interfaces
+
+      Prevention strategies:
+      - Implement strong authentication and authorization mechanisms
+      - Use API keys, OAuth 2.0, or JWT tokens with proper validation
+      - Implement comprehensive input validation and sanitization
+      - Apply rate limiting and request throttling
+      - Use HTTPS for all API communications
+      - Implement proper error handling without information disclosure
+      - Regular security testing and penetration testing
+      - Monitor API usage for suspicious patterns
+      - Use API gateways with built-in security features
+      - Implement proper logging and audit trails
+
+      Best practices:
+      - Follow the principle of least privilege for API access
+      - Validate all input parameters and request bodies
+      - Implement proper session management and token expiration
+      - Use secure storage for API keys and credentials
+      - Regular security assessments and updates
+      - Document security requirements and implement them consistently
+    resources:
+      - title: "OWASP API Security Top 10"
+        url: "https://owasp.org/www-project-api-security/"
+      - title: "OWASP API Security Cheat Sheet"
+        url: "https://cheatsheetseries.owasp.org/cheatsheets/API_Security_Cheat_Sheet.html"
+      - title: "OWASP Top 10: Security Misconfiguration"
+        url: "https://owasp.org/Top10/A05_2021-Security_Misconfiguration/"
