@@ -276,14 +276,34 @@ func (m *ChallengeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		// Handle challenge completion navigation
 		if m.hasAnswered && m.isCorrect && key.Matches(msg, keys.Next) {
-			if m.gameState.ShouldShowVulnerabilityExplanation(m.gameState.GetCurrentCategory()) {
-				m.gameState.SetPendingCategoryExplanation(m.gameState.GetCurrentCategory())
+			currentCategory := m.gameState.GetCurrentCategory()
+			shouldShow := m.gameState.ShouldShowVulnerabilityExplanation(currentCategory)
+
+			if shouldShow {
+				m.gameState.SetPendingCategoryExplanation(currentCategory)
 				explanationView := NewExplanationView(m.gameState, &m.challenge, m.width, m.height, m.sourceMenu, true)
 				return explanationView, explanationView.Init()
 			} else if m.gameState.MoveToNextChallenge() {
 				challenge := m.gameState.GetCurrentChallenge()
 				challengeView := NewChallengeView(m.gameState, challenge, m.width, m.height, MainMenu)
 				return challengeView, challengeView.Init()
+			} else {
+				// No more challenges available, check if we should show completion view
+				if m.gameState.GetTotalCompletionPercentage() == 100 {
+					// All challenges completed, show completion view
+					return NewCompletionView(m.gameState, m.width, m.height, MainMenu), nil
+				} else {
+					// Category completed but there are more challenges in other categories
+					// Try to get the next incomplete challenge from any category
+					nextChallenge, found := m.gameState.GetNextIncompleteChallenge()
+					if found {
+						challengeView := NewChallengeView(m.gameState, nextChallenge, m.width, m.height, MainMenu)
+						return challengeView, challengeView.Init()
+					} else {
+						// No more incomplete challenges, show completion view
+						return NewCompletionView(m.gameState, m.width, m.height, MainMenu), nil
+					}
+				}
 			}
 		}
 

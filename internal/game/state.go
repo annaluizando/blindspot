@@ -266,10 +266,28 @@ func (gs *GameState) GetCurrentChallenge() challenges.Challenge {
 		return gs.RandomizedChallenges[0]
 	}
 	// Otherwise, use the original order by category
+	// Add bounds checking to prevent panics
+	if gs.CurrentCategoryIdx >= len(gs.ChallengeSets) {
+		// If category index is out of bounds, reset to first category
+		gs.CurrentCategoryIdx = 0
+		gs.Progress.CurrentCategoryIdx = 0
+	}
+
+	if gs.CurrentChallengeIdx >= len(gs.ChallengeSets[gs.CurrentCategoryIdx].Challenges) {
+		// If challenge index is out of bounds, reset to first challenge
+		gs.CurrentChallengeIdx = 0
+		gs.Progress.CurrentChallengeIdx = 0
+	}
+
 	return gs.ChallengeSets[gs.CurrentCategoryIdx].Challenges[gs.CurrentChallengeIdx]
 }
 
 func (gs *GameState) GetCurrentCategory() string {
+	if gs.CurrentCategoryIdx >= len(gs.ChallengeSets) {
+		// If category index is out of bounds, reset to first category
+		gs.CurrentCategoryIdx = 0
+		gs.Progress.CurrentCategoryIdx = 0
+	}
 	return gs.ChallengeSets[gs.CurrentCategoryIdx].Category
 }
 

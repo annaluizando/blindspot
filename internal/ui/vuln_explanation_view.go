@@ -165,8 +165,16 @@ func (v *ExplanationView) handleNextAction() (tea.Model, tea.Cmd) {
 			challengeView := NewChallengeView(v.gameState, challenge, v.width, v.height, MainMenu)
 			return challengeView, challengeView.Init()
 		} else {
-			// No more challenges, go to completion view
-			return NewCompletionView(v.gameState, v.width, v.height, MainMenu), nil
+			// No more challenges in current category, check if there are challenges in other categories
+			nextChallenge, found := v.gameState.GetNextIncompleteChallenge()
+			if found {
+				// There are more challenges in other categories
+				challengeView := NewChallengeView(v.gameState, nextChallenge, v.width, v.height, MainMenu)
+				return challengeView, challengeView.Init()
+			} else {
+				// All challenges completed, go to completion view
+				return NewCompletionView(v.gameState, v.width, v.height, MainMenu), nil
+			}
 		}
 	}
 
