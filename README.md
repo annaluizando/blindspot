@@ -41,33 +41,33 @@ If you want to open blindspot directly in a random challenge, filtering by diffi
 - **`1` (Intermediate)**: For those with some security knowledge  
 - **`2` (Advanced)**: For experienced security professionals
 
-##### 💡 Examples:
+**💡 Examples:**
 
-**🎲 Playing random intermediate challenges:**
+🎲 Playing random intermediate challenges:
 ```bash
 blindspot --difficulty=1
 # or
 blindspot -d 1
 ```
 
-**🔒 Playing only injection challenges:**
+🔒 Playing only injection challenges:
 ```bash
 blindspot --category="Injection"
 # or
 blindspot -c "Injection"
 ```
 
-**⚡ Combining both flags:**
+⚡ Combining both flags:
 ```bash
 blindspot -d 1 -c "Cross-Site Scripting (XSS)"
 ```
 
-**📋 See all available categories:**
+📋 See all available categories:
 ```bash
 blindspot --help
 ```
 
-> ⚙️ How It Works:
+##### ⚙️ How It Works:
 When you use CLI flags, the game automatically:
 1. **🎯 Difficulty Mode**: If `--difficulty` is set, switches to "Random by Difficulty" mode and filters challenges by the specified level
 2. **📁 Category Mode**: If `--category` is set, jumps directly to the specified category and starts from the first challenge
