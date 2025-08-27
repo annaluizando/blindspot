@@ -25,35 +25,52 @@ Now, to play blindspot, you can simply run by it's name:
 blindspot
 ```
 
+#### CLI Support
+
 If you want to open blindspot directly in a random challenge, filtering by difficulty, you can run using flags.
 
-#### Flags:
+##### Available Flags:
 
---difficulty,
-where difficulty levels are:
-0 = Beginner,
-1 = Intermediate,
-2 = Advanced
+| Flag | Short | Description | Values |
+|------|-------|-------------|---------|
+| `--difficulty` | `-d` | Set game difficulty level | `0` (Beginner), `1` (Intermediate), `2` (Advanced) |
+| `--category` | `-c` | Set specific vulnerability category | Any category name from the game |
 
-Example, playing random intermediate challenges:
+> Difficulty Levels:
+- **`0` (Beginner)**: Perfect for newcomers to security concepts
+- **`1` (Intermediate)**: For those with some security knowledge  
+- **`2` (Advanced)**: For experienced security professionals
 
-```
+> Examples:
+
+**Playing random intermediate challenges:**
+```bash
 blindspot --difficulty=1
+# or
+blindspot -d 1
 ```
 
---category,
-where categories are categories in challenges.yaml, you can see all categories by using:
-
+**Playing only injection challenges:**
+```bash
+blindspot --category="Injection"
+# or
+blindspot -c "Injection"
 ```
+
+**Combining both flags:**
+```bash
+blindspot -d 1 -c "Cross-Site Scripting (XSS)"
+```
+
+**See all available categories:**
+```bash
 blindspot --help
 ```
 
-Then, when you know which category you want, pass it's exact string to flag
-Example, playing only injection challenges:
-
-```
-blindspot --category="Injection"
-```
+> How It Works:
+When you use CLI flags, the game automatically:
+1. **Difficulty Mode**: If `--difficulty` is set, switches to "Random by Difficulty" mode and filters challenges by the specified level
+2. **Category Mode**: If `--category` is set, jumps directly to the specified category and starts from the first challenge
 
 ## 🔧 Stack
 
@@ -174,17 +191,14 @@ your questions. Each question needs to be in the following format:
 - [x] Correct vuln explanation to go back to its origin and not main menu when user presses back key
 - [x] Add user errors count in each category for statistics
 - [x] Add scroll when height is too big for terminal view
+- [x] Fix and improve help text clarity
+- [x] Complete manual review of challenges.yaml
+- [x] Add cli support
 
 ### In Progress
 
-- [ ] Implement adaptive text color based on terminal theme
-- [+-] Fix and improve help text clarity
 - [ ] Resolve bug in game mode toggle
-- [+-] Look for better code highlighting theme
 - [+-] Review code and improve
-- [ ] Complete manual review of challenges.yaml
-- [+-] Add cli support
-  > add more flags
 
 ## 📜 License
 
