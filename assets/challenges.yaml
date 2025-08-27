@@ -1207,9 +1207,7 @@ challengeSets:
           const WebSocket = require('ws');
           const wss = new WebSocket.Server({ noServer: true });
 
-          httpServer.on('upgrade', (request, socket, head) => {
-            // This is where authentication should happen, but it's missing.
-            
+          httpServer.on('upgrade', (request, socket, head) => {            
             wss.handleUpgrade(request, socket, head, (ws) => {
               wss.emit('connection', ws, request);
             });
@@ -1217,7 +1215,6 @@ challengeSets:
 
           wss.on('connection', function connection(ws) {
             ws.on('message', function incoming(message) {
-              // Broadcast the message to all connected clients
               wss.clients.forEach(client => {
                 if (client.readyState === WebSocket.OPEN) {
                   client.send(message);
@@ -1249,9 +1246,8 @@ challengeSets:
           const server = new ApolloServer({
             typeDefs,
             resolvers,
-            // In a production environment, introspection should be disabled.
             introspection: true,
-            playground: false // The playground is disabled, but introspection is still on.
+            playground: false,
           });
         options:
           - "Enabling introspection in production allows attackers to map out the entire API schema."
@@ -1279,7 +1275,6 @@ challengeSets:
               private RestTemplate restTemplate;
               
               public User getUserDetails(String userId) {
-                  // The user service endpoint is internal, but not secured
                   String url = "http://user-service/api/users/" + userId;
                   
                   ResponseEntity<User> response = restTemplate.getForEntity(url, User.class);
@@ -1491,10 +1486,8 @@ challengeSets:
           public ResponseEntity<User> updateMyProfile(@RequestBody User updatedUserData) {
               User currentUser = getCurrentUser();
               
-              // This is vulnerable to mass assignment
               currentUser.setUsername(updatedUserData.getUsername());
               currentUser.setEmail(updatedUserData.getEmail());
-              // An attacker can also set the role!
               currentUser.setRole(updatedUserData.getRole());
               
               userService.save(currentUser);

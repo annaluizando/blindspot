@@ -201,8 +201,6 @@ func (v *ExplanationView) updateContent() {
 		v.buildNoExplanationContent(&b)
 	}
 
-	v.buildHelpSection(&b)
-
 	v.contentStr = b.String()
 	v.updateViewportContent()
 }
@@ -246,17 +244,6 @@ func (v *ExplanationView) buildResourcesSection(b *strings.Builder) {
 	b.WriteString("\n")
 }
 
-func (v *ExplanationView) buildHelpSection(b *strings.Builder) {
-	if v.showHelp {
-		b.WriteString("\n" + v.help.View(ExplanationKeys))
-	} else if v.isFromCompletion {
-		b.WriteString("\n" + helpHintStyle.Render("Press 'Enter'/'N' to continue to next challenge"))
-		b.WriteString("\n" + helpHintStyle.Render("Press ? for help"))
-	} else {
-		b.WriteString("\n" + helpHintStyle.Render("Press ? for help"))
-	}
-}
-
 func (v *ExplanationView) updateViewportContent() {
 	helpHeight := 1
 	if v.showHelp {
@@ -291,7 +278,7 @@ func (v *ExplanationView) buildScrollIndicator(b *strings.Builder) {
 
 func (v *ExplanationView) buildHelpFooter(b *strings.Builder) {
 	if v.showHelp {
-		b.WriteString("\n" + v.help.View(MenuKeys))
+		b.WriteString("\n" + v.help.View(ExplanationKeys))
 	} else {
 		v.buildHelpText(b)
 	}
@@ -300,17 +287,15 @@ func (v *ExplanationView) buildHelpFooter(b *strings.Builder) {
 func (v *ExplanationView) buildHelpText(b *strings.Builder) {
 	hasScroll := v.viewport.YOffset > 0 || v.viewport.YOffset+v.viewport.Height < strings.Count(v.contentStr, "\n")+1
 
-	helpText := "Press ? for help | ↑/↓ to navigate"
+	var parts []string
+	if v.isFromCompletion {
+		parts = append(parts, "'Enter'/'N' to continue")
+	}
+	parts = append(parts, "? for help")
 	if hasScroll {
-		helpText += " | j/k to scroll"
+		parts = append(parts, "j/k to scroll")
 	}
-
-	if v.width < 60 {
-		helpText = "? for help | ↑/↓ nav"
-		if hasScroll {
-			helpText += " | j/k scroll"
-		}
-	}
+	helpText := strings.Join(parts, " | ")
 
 	b.WriteString("\n" + helpHintStyle.Render(helpText))
 }

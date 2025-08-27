@@ -549,3 +549,400 @@ vulnerabilities:
         url: "https://cheatsheetseries.owasp.org/cheatsheets/API_Security_Cheat_Sheet.html"
       - title: "OWASP Top 10: Security Misconfiguration"
         url: "https://owasp.org/Top10/A05_2021-Security_Misconfiguration/"
+
+  - name: "Cloud Security Misconfigurations"
+    short_description: "Security flaws in cloud environments due to improper configuration of cloud services."
+    explanation: |
+      Cloud Security Misconfigurations are a leading cause of cloud-related data breaches. These vulnerabilities arise from the improper setup of cloud services, rather than a flaw in the cloud provider's infrastructure. Given the complexity and flexibility of cloud platforms like AWS, Azure, and GCP, it's easy to make configuration mistakes that expose sensitive data or systems.
+
+      Common cloud misconfigurations include:
+      - Publicly accessible cloud storage (e.g., S3 buckets)
+      - Overly permissive IAM roles and policies
+      - Unsecured database services
+      - Exposed container orchestration platforms (e.g., Kubernetes)
+      - Inadequate network security group rules (firewalls)
+      - Disabled logging and monitoring for cloud services
+      - Use of default credentials or weak access keys
+
+      These issues can lead to:
+      - Sensitive data exposure
+      - Unauthorized access to cloud resources
+      - Account takeover
+      - Resource hijacking for crypto-mining or other malicious activities
+
+      Prevention strategies:
+      - Implement the principle of least privilege for all IAM policies.
+      - Use Infrastructure as Code (IaC) tools (like Terraform or CloudFormation) with static analysis to enforce secure configurations.
+      - Regularly scan for misconfigurations using Cloud Security Posture Management (CSPM) tools.
+      - Block public access to sensitive storage services by default.
+      - Enable logging and monitoring for all cloud services.
+      - Encrypt data at rest and in transit.
+    resources:
+      - title: "OWASP Cloud Top 10"
+        url: "https://owasp.org/www-project-cloud-top-10/"
+      - title: "CIS Benchmarks for Cloud Providers"
+        url: "https://www.cisecurity.org/cis-benchmarks/"
+
+  - name: "Mobile Application Security"
+    short_description: "Security vulnerabilities specific to mobile applications on platforms like Android and iOS."
+    explanation: |
+      Mobile Application Security focuses on the unique security challenges posed by applications running on mobile devices. These challenges differ from traditional web applications due to the device's nature (often lost or stolen), platform-specific APIs, and different communication patterns.
+
+      Common mobile security vulnerabilities include:
+      - Insecure data storage (e.g., storing sensitive data unencrypted in SharedPreferences or Plists)
+      - Insecure communication (e.g., not using TLS, or improper certificate validation)
+      - Insecure authentication and authorization
+      - Code tampering and reverse engineering
+      - Weak server-side controls for mobile APIs
+      - Platform-specific vulnerabilities (e.g., Intent sniffing on Android, insecure URL schemes on iOS)
+
+      Impacts of mobile vulnerabilities include:
+      - Theft of personal and sensitive data from the device
+      - Session hijacking through intercepted network traffic
+      - Unauthorized access to backend systems
+      - Fraud and financial loss
+
+      Prevention strategies:
+      - Use secure storage APIs provided by the platform (e.g., Android Keystore, iOS Keychain).
+      - Encrypt all sensitive data stored on the device and transmitted over the network.
+      - Implement certificate pinning to prevent Man-in-the-Middle (MITM) attacks.
+      - Use code obfuscation and anti-tampering techniques.
+      - Follow secure coding practices for the specific mobile platform.
+      - Apply the same rigorous security standards to mobile APIs as to web APIs.
+    resources:
+      - title: "OWASP Mobile Application Security Project (MASVS)"
+        url: "https://owasp.org/www-project-mobile-app-security/"
+      - title: "OWASP Mobile Security Testing Guide (MSTG)"
+        url: "https://github.com/OWASP/owasp-mstg"
+
+  - name: "DevOps and CI/CD Security"
+    short_description: "Security risks associated with the tools and processes in the DevOps software development lifecycle."
+    explanation: |
+      DevOps and CI/CD Security (often called DevSecOps) focuses on integrating security practices into the DevOps lifecycle. The automation and speed of modern software delivery pipelines can introduce new security risks if not managed properly.
+
+      Common vulnerabilities in the CI/CD pipeline include:
+      - Leaking secrets (API keys, passwords) in logs or build artifacts
+      - Insecure configurations in CI/CD tools (e.g., Jenkins, GitHub Actions)
+      - Vulnerable dependencies being built into the application
+      - Insecure base images for containers
+      - Lack of security scanning in the pipeline (SAST, DAST, SCA)
+      - Overly permissive access to build servers and deployment environments
+
+      These issues can lead to:
+      - Supply chain attacks where malicious code is injected into the application
+      - Compromise of production environments
+      - Exposure of sensitive credentials and data
+
+      Prevention strategies:
+      - Use secure secret management tools (like HashiCorp Vault or cloud provider KMS) instead of environment variables or files.
+      - Implement security scanning tools directly into the pipeline to catch vulnerabilities early.
+      - Harden the configuration of CI/CD tools and restrict access based on the principle of least privilege.
+      - Use signed commits and build artifacts to ensure integrity.
+      - Regularly update and scan container base images and dependencies.
+    resources:
+      - title: "OWASP DevSecOps Guideline"
+        url: "https://owasp.org/www-project-devsecops-guideline/"
+      - title: "NIST Secure Software Development Framework (SSDF)"
+        url: "https://csrc.nist.gov/Projects/ssdf"
+
+  - name: "WebSocket Security"
+    short_description: "Security vulnerabilities related to the WebSocket protocol, which enables real-time, bidirectional communication."
+    explanation: |
+      WebSocket Security addresses the unique challenges of the WebSocket protocol. Unlike traditional HTTP request-response, WebSockets provide a persistent, full-duplex communication channel between a client and a server. This introduces different security considerations.
+
+      Common WebSocket vulnerabilities include:
+      - Unauthenticated or unauthorized connections, allowing anyone to connect to the WebSocket endpoint.
+      - Cross-Site WebSocket Hijacking (CSWSH), similar to CSRF but for WebSockets.
+      - Lack of input validation on messages sent from the client, leading to injection attacks on the backend.
+      - Denial of Service (DoS) by overwhelming the server with connections or messages.
+      - Sensitive data exposure if messages are not encrypted (using WSS protocol).
+
+      These vulnerabilities can lead to:
+      - Unauthorized access to real-time data streams.
+      - Injection of malicious data into applications of other users.
+      - Server resource exhaustion.
+
+      Prevention strategies:
+      - Implement robust authentication and authorization during the initial WebSocket handshake.
+      - Use the secure WebSocket protocol (WSS) which uses TLS for encryption.
+      - Validate the `Origin` header during the handshake to prevent CSWSH.
+      - Validate and sanitize all messages received from clients on the server-side.
+      - Implement rate limiting on connections and messages.
+    resources:
+      - title: "OWASP WebSocket Security"
+        url: "https://owasp.org/www-community/attacks/Cross-Site_WebSocket_Hijacking"
+      - title: "PortSwigger: WebSocket security"
+        url: "https://portswigger.net/web-security/websockets"
+
+  - name: "GraphQL Security"
+    short_description: "Security vulnerabilities specific to GraphQL APIs, which provide a flexible query language for APIs."
+    explanation: |
+      GraphQL Security covers the unique security risks of GraphQL APIs. Unlike REST APIs with fixed endpoints, GraphQL allows clients to request exactly the data they need, which provides flexibility but also creates new attack surfaces.
+
+      Common GraphQL vulnerabilities include:
+      - Introspection enabled in production, which allows attackers to discover the entire API schema.
+      - Lack of query depth and complexity limiting, leading to Denial of Service (DoS) attacks via overly complex queries.
+      - Inadequate authorization at the field level, allowing users to access data they shouldn't see.
+      - Injection vulnerabilities in GraphQL resolvers.
+      - Exposure of sensitive information through verbose error messages.
+
+      These vulnerabilities can result in:
+      - Full API schema disclosure to attackers.
+      - Denial of Service.
+      - Unauthorized data access.
+
+      Prevention strategies:
+      - Disable introspection in production environments.
+      - Implement query depth limiting, amount limiting, and query cost analysis.
+      - Implement authorization checks within each resolver for each field.
+      - Use parameterized queries in resolvers to prevent injection attacks.
+      - Sanitize error messages to avoid leaking implementation details.
+    resources:
+      - title: "OWASP GraphQL Cheat Sheet"
+        url: "https://cheatsheetseries.owasp.org/cheatsheets/GraphQL_Cheat_Sheet.html"
+      - title: "Apollo GraphQL Security Best Practices"
+        url: "https://www.apollographql.com/docs/apollo-server/security/best-practices/"
+
+  - name: "Microservices Security"
+    short_description: "Security challenges in microservices architectures, focusing on inter-service communication and distributed complexity."
+    explanation: |
+      Microservices Security deals with securing applications built as a collection of smaller, independent services. While this architecture offers scalability and flexibility, it introduces new security challenges compared to monolithic applications.
+
+      Key security concerns in microservices include:
+      - Insecure service-to-service communication (e.g., using unencrypted channels or no authentication).
+      - Centralized authentication and authorization (often handled by an API gateway).
+      - Distributed logging and monitoring for security events.
+      - Managing secrets across multiple services.
+      - Increased attack surface due to numerous exposed services.
+      - Network policies and segmentation to control traffic between services.
+
+      Failure to address these concerns can lead to:
+      - Man-in-the-Middle attacks between services.
+      - Unauthorized access to services by other compromised services.
+      - Difficulty in tracking security incidents across the distributed system.
+
+      Prevention strategies:
+      - Use mutual TLS (mTLS) for encrypted and authenticated communication between services.
+      - Use an API gateway to enforce authentication, authorization, and rate limiting at the edge.
+      - Implement centralized logging and monitoring (e.g., using a SIEM).
+      - Use a service mesh (like Istio or Linkerd) to manage security policies.
+      - Store secrets in a centralized, secure vault.
+    resources:
+      - title: "OWASP Microservices Security"
+        url: "https://owasp.org/www-project-microservices-security/"
+      - title: "NIST SP 800-204, Security Strategies for Microservices-based Application Systems"
+        url: "https://csrc.nist.gov/publications/detail/sp/800-204/final"
+
+  - name: "Container Security"
+    short_description: "Security challenges related to building, running, and managing containers (e.g., Docker)."
+    explanation: |
+      Container Security focuses on securing the entire lifecycle of application containers. This includes the container image, the container runtime, and the orchestration platform.
+
+      Common container security issues include:
+      - Using vulnerable base images with outdated packages.
+      - Running containers as the root user.
+      - Insecurely configured container runtimes or orchestrators (e.g., Kubernetes).
+      - Lack of network segmentation between containers.
+      - Storing secrets insecurely within container images or environment variables.
+      - Not scanning images for vulnerabilities before deployment.
+
+      These issues can lead to:
+      - Container escape, where an attacker breaks out of the container and gains access to the host.
+      - Compromise of the entire container cluster.
+      - Shipping applications with known vulnerabilities.
+
+      Prevention strategies:
+      - Use minimal, trusted base images and scan them for vulnerabilities.
+      - Run containers with non-root users (principle of least privilege).
+      - Use container orchestration security features (e.g., Kubernetes Pod Security Policies, Network Policies).
+      - Store secrets in dedicated secret management systems (like Kubernetes Secrets or Vault).
+      - Implement runtime security monitoring to detect anomalous behavior in containers.
+    resources:
+      - title: "OWASP Docker Security Cheat Sheet"
+        url: "https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html"
+      - title: "NIST SP 800-190, Application Container Security Guide"
+        url: "https://csrc.nist.gov/publications/detail/sp/800-190/final"
+
+  - name: "Database Security"
+    short_description: "Protecting databases and the data within them from unauthorized access and threats."
+    explanation: |
+      Database Security involves a range of controls, tools, and practices to protect databases from threats and misuse. This includes the data in the database, the database management system (DBMS), and the applications that access it.
+
+      Key areas of database security include:
+      - Access Control: Limiting who can access the database and what they can do.
+      - Data Encryption: Encrypting sensitive data both at rest and in transit.
+      - Auditing and Monitoring: Tracking who accesses data and when.
+      - Backup and Recovery: Ensuring data can be restored in case of loss or corruption.
+      - Preventing SQL/NoSQL Injection attacks.
+
+      Common database security vulnerabilities are:
+      - Excessive privileges granted to database users.
+      - SQL/NoSQL injection flaws in applications.
+      - Unencrypted sensitive data.
+      - Unpatched database systems.
+      - Weak or default credentials.
+      - Lack of auditing.
+
+      Prevention strategies:
+      - Enforce the principle of least privilege for database accounts.
+      - Use parameterized queries or prepared statements to prevent injection.
+      - Encrypt sensitive data columns and entire databases.
+      - Regularly apply security patches to the DBMS.
+      - Implement strong password policies and multi-factor authentication.
+      - Enable detailed logging and regularly review audit trails.
+    resources:
+      - title: "OWASP Database Security Cheat Sheet"
+        url: "https://cheatsheetseries.owasp.org/cheatsheets/Database_Security_Cheat_Sheet.html"
+      - title: "CIS Benchmarks for Database Systems"
+        url: "https://www.cisecurity.org/cis-benchmarks/"
+
+  - name: "Network Security"
+    short_description: "Practices designed to protect the integrity, confidentiality, and accessibility of computer networks and data."
+    explanation: |
+      Network Security consists of the policies and practices adopted to prevent and monitor unauthorized access, misuse, modification, or denial of a computer network and network-accessible resources.
+
+      It involves securing the network infrastructure at several layers:
+      - Physical Security: Protecting network hardware.
+      - Access Control: Limiting access to the network to authorized users and devices.
+      - Firewalls: Controlling incoming and outgoing network traffic.
+      - Intrusion Prevention Systems (IPS): Identifying and stopping malicious activity.
+      - Virtual Private Networks (VPNs): Providing secure remote access.
+      - Application Security: Securing applications and services running on the network.
+
+      Common network security issues:
+      - Insecure firewall configurations (e.g., 'default allow' policies).
+      - Unpatched network devices and servers.
+      - Lack of network segmentation.
+      - Insecure wireless networks.
+      - Absence of monitoring for suspicious traffic.
+
+      Prevention strategies:
+      - Implement a 'default deny' firewall policy.
+      - Segment the network to isolate critical systems.
+      - Use strong encryption for all network traffic (e.g., TLS, WPA3).
+      - Regularly patch all network devices and systems.
+      - Deploy network-based monitoring tools to detect and alert on anomalies.
+    resources:
+      - title: "NIST SP 800-41, Guidelines on Firewalls and Firewall Policy"
+        url: "https://csrc.nist.gov/publications/detail/sp/800-41/rev-1/final"
+      - title: "SANS Institute - Network Security Resources"
+        url: "https://www.sans.org/network-security/"
+
+  - name: "Authentication Bypass"
+    short_description: "Vulnerabilities that allow an attacker to gain access to an application without providing valid credentials."
+    explanation: |
+      Authentication Bypass vulnerabilities allow an attacker to circumvent the application's authentication mechanisms and gain access to protected functionality or data. These are critical flaws as they can undermine the entire security model of an application.
+
+      Common ways authentication can be bypassed:
+      - Flaws in credential validation logic (e.g., SQL Injection on a login form).
+      - Weaknesses in session management (e.g., predictable session tokens).
+      - Insecure password reset functionality.
+      - Type juggling vulnerabilities in loosely typed languages (e.g., PHP).
+      - Forced browsing to access pages that should require authentication.
+      - Flaws in multi-factor authentication implementation.
+
+      An authentication bypass can lead to:
+      - Complete account takeover.
+      - Unauthorized access to sensitive data and functionality.
+      - Privilege escalation.
+
+      Prevention strategies:
+      - Use well-vetted, standard authentication libraries and frameworks.
+      - Protect all pages and API endpoints with robust, centralized authentication and authorization checks.
+      - Implement secure session management with long, random session identifiers.
+      - Secure password reset mechanisms with time-limited, single-use tokens.
+      - Use strict equality checks to prevent type juggling.
+    resources:
+      - title: "OWASP Authentication Cheat Sheet"
+        url: "https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html"
+      - title: "PortSwigger: Authentication vulnerabilities"
+        url: "https://portswigger.net/web-security/authentication"
+
+  - name: "Data Exposure"
+    short_description: "The accidental or intentional revealing of sensitive information to unauthorized parties."
+    explanation: |
+      Data Exposure, often referred to as Sensitive Data Exposure, occurs when an application fails to adequately protect sensitive information. This can happen at rest (in storage) or in transit (over the network).
+
+      Common causes of data exposure include:
+      - Not using encryption for sensitive data.
+      - Using weak or broken cryptographic algorithms.
+      - Storing sensitive data in logs or error messages.
+      - Transmitting data over unencrypted channels (HTTP instead of HTTPS).
+      - Leaking information through verbose API responses.
+      - Insecure disposal of data.
+
+      The impact of data exposure can be severe, leading to:
+      - Identity theft and fraud.
+      - Financial loss.
+      - Reputational damage.
+      - Regulatory fines (e.g., under GDPR or CCPA).
+
+      Prevention strategies:
+      - Classify data and apply appropriate protection based on its sensitivity.
+      - Encrypt all sensitive data at rest and in transit using strong, modern algorithms.
+      - Never store sensitive data, such as passwords, in plaintext logs.
+      - Enforce the use of TLS for all network communication.
+      - Sanitize API responses to remove any unnecessary sensitive information.
+      - Implement a secure data disposal policy.
+    resources:
+      - title: "OWASP Top 10: Cryptographic Failures"
+        url: "https://owasp.org/Top10/A02_2021-Cryptographic_Failures/"
+      - title: "OWASP Logging Cheat Sheet"
+        url: "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html"
+
+  - name: "Input Validation"
+    short_description: "Flaws that occur when an application fails to properly validate data from a user or another untrusted source."
+    explanation: |
+      Input Validation vulnerabilities are a broad class of flaws that occur when an application does not properly validate input. This can allow attackers to inject malicious data that is then processed by the application, leading to a wide range of attacks.
+
+      Lack of proper input validation can lead to:
+      - Cross-Site Scripting (XSS)
+      - SQL Injection
+      - Command Injection
+      - Denial of Service (e.g., via buffer overflows)
+      - Path Traversal
+      - Insecure Deserialization
+
+      It is a fundamental principle of secure coding that all input from external sources must be considered untrusted and should be validated.
+
+      Prevention strategies:
+      - Implement a 'default deny' policy for input validation.
+      - Use allow-lists of acceptable characters, formats, and values.
+      - Validate data for type, length, format, and range.
+      - Sanitize data by removing or encoding potentially malicious characters.
+      - Perform validation on the server-side, not just the client-side.
+      - Use well-vetted libraries for handling complex data formats (e.g., XML, JSON).
+    resources:
+      - title: "OWASP Input Validation Cheat Sheet"
+        url: "https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html"
+      - title: "SANS: Data Validation"
+        url: "https://www.sans.org/top25-software-errors/#cat1"
+
+  - name: "Privilege Escalation"
+    short_description: "A vulnerability that allows an attacker to gain elevated access to resources that are normally protected."
+    explanation: |
+      Privilege Escalation vulnerabilities allow an attacker to gain a higher level of permissions than they are intended to have. This can be either horizontal (gaining access to another user's data) or vertical (gaining administrative privileges).
+
+      Common causes of privilege escalation:
+      - Broken Access Control, where authorization checks are missing or flawed.
+      - Mass Assignment, where an attacker can modify protected attributes of an object (e.g., `isAdmin` flag).
+      - Exploiting system-level vulnerabilities in the underlying OS or software.
+      - Insecure Direct Object References (IDOR), a form of horizontal privilege escalation.
+      - Race conditions that bypass security checks.
+
+      The impact is critical, as it can allow a low-privilege attacker to:
+      - Take full control of the application.
+      - Access all user data.
+      - Compromise the underlying server.
+
+      Prevention strategies:
+      - Enforce the principle of least privilege for all users and processes.
+      - Implement robust, centralized authorization checks for all actions and data access.
+      - Avoid direct mapping of user input to internal objects; use Data Transfer Objects (DTOs) instead.
+      - Keep all system software and dependencies patched and up-to-date.
+      - Perform thorough security testing for access control flaws.
+    resources:
+      - title: "OWASP Top 10: Broken Access Control"
+        url: "https://owasp.org/Top10/A01_2021-Broken_Access_Control/"
+      - title: "PortSwigger: Privilege Escalation"
+        url: "https://portswigger.net/web-security/privilege-escalation"
