@@ -277,7 +277,8 @@ func (m *ChallengeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Handle challenge completion navigation
 		if m.hasAnswered && m.isCorrect && key.Matches(msg, keys.Next) {
 			if m.gameState.ShouldShowVulnerabilityExplanation(m.gameState.GetCurrentCategory()) {
-				explanationView := NewExplanationView(m.gameState, m.challenge, m.width, m.height, m.sourceMenu, true)
+				m.gameState.SetPendingCategoryExplanation(m.gameState.GetCurrentCategory())
+				explanationView := NewExplanationView(m.gameState, &m.challenge, m.width, m.height, m.sourceMenu, true)
 				return explanationView, explanationView.Init()
 			} else if m.gameState.MoveToNextChallenge() {
 				challenge := m.gameState.GetCurrentChallenge()

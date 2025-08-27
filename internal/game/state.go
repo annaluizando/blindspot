@@ -11,12 +11,13 @@ import (
 )
 
 type UserProgress struct {
-	CompletedChallenges    map[string]bool `json:"completedChallenges"`
-	CurrentCategoryIdx     int             `json:"currentCategoryIdx"`
-	CurrentChallengeIdx    int             `json:"currentChallengeIdx"`
-	RandomizedChallengeIDs []string        `json:"randomizedChallengeIDs"`
-	CategoryErrorCounts    map[string]int  `json:"categoryErrorCounts"`
-	IsRandomMode           bool            `json:"isRandomMode"`
+	CompletedChallenges        map[string]bool `json:"completedChallenges"`
+	CurrentCategoryIdx         int             `json:"currentCategoryIdx"`
+	CurrentChallengeIdx        int             `json:"currentChallengeIdx"`
+	RandomizedChallengeIDs     []string        `json:"randomizedChallengeIDs"`
+	CategoryErrorCounts        map[string]int  `json:"categoryErrorCounts"`
+	IsRandomMode               bool            `json:"isRandomMode"`
+	PendingCategoryExplanation string          `json:"pendingCategoryExplanation"`
 }
 
 type UserSettings struct {
@@ -100,13 +101,30 @@ func NewGameState() (*GameState, error) {
 	return gs, nil
 }
 
-// Helper method to get explanation for a specific challenge
 func (gs *GameState) GetVulnerabilityExplanation(category string) (challenges.VulnerabilityInfo, bool) {
 	explanation, found := gs.VulnerabilityExplanations[category]
 	return explanation, found
 }
 
-// Helper method to toggle setting for showing vulnerability names
+// SetPendingCategoryExplanation marks that the user should return to a category explanation
+func (gs *GameState) SetPendingCategoryExplanation(category string) {
+	gs.Progress.PendingCategoryExplanation = category
+	gs.SaveProgress()
+}
+
+func (gs *GameState) ClearPendingCategoryExplanation() {
+	gs.Progress.PendingCategoryExplanation = ""
+	gs.SaveProgress()
+}
+
+func (gs *GameState) GetPendingCategoryExplanation() string {
+	return gs.Progress.PendingCategoryExplanation
+}
+
+func (gs *GameState) ShouldReturnToCategoryExplanation() bool {
+	return gs.Progress.PendingCategoryExplanation != ""
+}
+
 func (gs *GameState) ToggleShowVulnerabilityNames() {
 	gs.Settings.ShowVulnerabilityNames = !gs.Settings.ShowVulnerabilityNames
 	gs.SaveSettings()
@@ -132,18 +150,15 @@ func (gs *GameState) ToggleGameMode() {
 	gs.SaveSettings()
 }
 
-// Checks if a challenge has been completed
 func (gs *GameState) IsChallengeCompleted(challengeID string) bool {
 	return gs.Progress.CompletedChallenges[challengeID]
 }
 
 func (gs *GameState) MarkChallengeCompleted(challengeID string) {
 	gs.Progress.CompletedChallenges[challengeID] = true
-	// Save progress after marking challenge completed
 	gs.SaveProgress()
 }
 
-// Calculates completion percentage for a category
 func (gs *GameState) GetCategoryCompletionPercentage(category string) int {
 	var total, completed int
 
@@ -167,7 +182,6 @@ func (gs *GameState) GetCategoryCompletionPercentage(category string) int {
 	return (completed * 100) / total
 }
 
-// Calculates overall completion percentage
 func (gs *GameState) GetTotalCompletionPercentage() int {
 	var total, completed int
 
@@ -187,7 +201,6 @@ func (gs *GameState) GetTotalCompletionPercentage() int {
 	return (completed * 100) / total
 }
 
-// Returns the current challenge
 func (gs *GameState) GetCurrentChallenge() challenges.Challenge {
 	if gs.UseRandomizedOrder && len(gs.RandomizedChallenges) > 0 {
 		// When in randomized mode, use the currentChallengeIdx directly

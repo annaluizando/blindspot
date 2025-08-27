@@ -232,6 +232,11 @@ func (m *MenuView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.gameState.SaveRandomizedOrder()
 					}
 
+					if m.gameState.ShouldReturnToCategoryExplanation() {
+						explanationView := NewExplanationView(m.gameState, nil, m.width, m.height, MainMenu, false)
+						return explanationView, nil
+					}
+
 					_, found := m.gameState.GetNextIncompleteChallenge()
 					var challenge challenges.Challenge
 
@@ -265,17 +270,7 @@ func (m *MenuView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return newMenu, nil
 			} else if m.type_ == ChallengeMenu {
 				if strings.HasPrefix(m.items[m.cursor].ID, "explanation-") {
-					categoryName := strings.TrimPrefix(m.items[m.cursor].ID, "explanation-")
-
-					var sampleChallenge challenges.Challenge
-					for _, set := range m.gameState.ChallengeSets {
-						if set.Category == categoryName && len(set.Challenges) > 0 {
-							sampleChallenge = set.Challenges[0]
-							break
-						}
-					}
-
-					explanationView := NewExplanationView(m.gameState, sampleChallenge, m.width, m.height, m.type_, false)
+					explanationView := NewExplanationView(m.gameState, nil, m.width, m.height, m.type_, false)
 					return explanationView, nil
 				}
 

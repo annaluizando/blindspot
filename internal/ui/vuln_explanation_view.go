@@ -32,7 +32,7 @@ type ExplanationKeyMap struct {
 // ExplanationView displays vulnerability explanations with scrolling support
 type ExplanationView struct {
 	gameState        *game.GameState
-	challenge        challenges.Challenge
+	challenge        *challenges.Challenge
 	explanation      challenges.VulnerabilityInfo
 	explanationFound bool
 	width            int
@@ -83,7 +83,7 @@ var (
 )
 
 // NewExplanationView creates a new explanation view
-func NewExplanationView(gs *game.GameState, challenge challenges.Challenge, width, height int, sourceMenu MenuType, isFromCompletion bool) *ExplanationView {
+func NewExplanationView(gs *game.GameState, challenge *challenges.Challenge, width, height int, sourceMenu MenuType, isFromCompletion bool) *ExplanationView {
 	explanation, found := gs.GetVulnerabilityExplanation(gs.GetCurrentCategory())
 
 	explanationView := &ExplanationView{
@@ -150,13 +150,27 @@ func (v *ExplanationView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // handleNextAction handles the next action based on context
 func (v *ExplanationView) handleNextAction() (tea.Model, tea.Cmd) {
-	if v.isFromCompletion {
-		return v, func() tea.Msg {
-			return nextChallengeMsg{}
+	// Check if there was a pending explanation before clearing it
+	hadPendingExplanation := v.gameState.GetPendingCategoryExplanation() != ""
+
+	// Clear the pending explanation since user is moving forward
+	v.gameState.ClearPendingCategoryExplanation()
+
+	// If this is from completion OR if there was a pending explanation,
+	// try to move to the next challenge
+	if v.isFromCompletion || hadPendingExplanation {
+		// Try to move to next challenge
+		if v.gameState.MoveToNextChallenge() {
+			challenge := v.gameState.GetCurrentChallenge()
+			challengeView := NewChallengeView(v.gameState, challenge, v.width, v.height, MainMenu)
+			return challengeView, challengeView.Init()
+		} else {
+			// No more challenges, go to completion view
+			return NewCompletionView(v.gameState, v.width, v.height, MainMenu), nil
 		}
 	}
 
-	// Return to category view
+	// Return to category view (fallback)
 	return v.navigateToCategoryView()
 }
 
@@ -193,7 +207,8 @@ func (v *ExplanationView) updateContent() {
 	var b strings.Builder
 
 	// Header section
-	v.buildHeader(&b)
+	b.WriteString(explanationHighlightStyle.Render("🔍 Category Explanation") + "\n\n")
+	b.WriteString(fmt.Sprintf("%s\n\n", explanationHighlightStyle.Render(v.gameState.GetCurrentCategory())))
 
 	if v.explanationFound {
 		v.buildExplanationContent(&b)
@@ -203,17 +218,6 @@ func (v *ExplanationView) updateContent() {
 
 	v.contentStr = b.String()
 	v.updateViewportContent()
-}
-
-func (v *ExplanationView) buildHeader(b *strings.Builder) {
-	if v.isFromCompletion {
-		b.WriteString(completedStyle.Render("🎉 Challenge Completed!") + "\n\n")
-		b.WriteString(fmt.Sprintf("You've completed: %s\n\n", selectedItemStyle.Render(v.challenge.Title)))
-	} else {
-		b.WriteString(explanationHighlightStyle.Render("🔍 Category Explanation") + "\n\n")
-	}
-
-	b.WriteString(fmt.Sprintf("%s\n\n", explanationHighlightStyle.Render(v.gameState.GetCurrentCategory())))
 }
 
 func (v *ExplanationView) buildExplanationContent(b *strings.Builder) {
