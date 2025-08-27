@@ -36,12 +36,12 @@ If you want to open blindspot directly in a random challenge, filtering by diffi
 | `--difficulty` | `-d` | Set game difficulty level | `0` (Beginner), `1` (Intermediate), `2` (Advanced) |
 | `--category` | `-c` | Set specific vulnerability category | Any category name from the game |
 
-> 🏆 Difficulty Levels:
+##### 🏆 Difficulty Levels:
 - **`0` (Beginner)**: Perfect for newcomers to security concepts
 - **`1` (Intermediate)**: For those with some security knowledge  
 - **`2` (Advanced)**: For experienced security professionals
 
-> 💡 Examples:
+##### 💡 Examples:
 
 **🎲 Playing random intermediate challenges:**
 ```bash
