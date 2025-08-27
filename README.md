@@ -8,7 +8,7 @@ Feel free to play, analyze, modify, and contribute. New ideas and collaborations
 
 Here is step-by-step what you need to run this project:
 
-### Installation
+### 📦 Installation
 
 ```
 git clone https://github.com/annaluizando/blindspot.git
@@ -17,7 +17,7 @@ make build
 make install
 ```
 
-### Playing
+### 🎮 Playing
 
 Now, to play blindspot, you can simply run by it's name:
 
@@ -25,52 +25,52 @@ Now, to play blindspot, you can simply run by it's name:
 blindspot
 ```
 
-#### CLI Support
+#### 🚀 CLI Support
 
 If you want to open blindspot directly in a random challenge, filtering by difficulty, you can run using flags.
 
-##### Available Flags:
+##### 🎯 Available Flags:
 
 | Flag | Short | Description | Values |
 |------|-------|-------------|---------|
 | `--difficulty` | `-d` | Set game difficulty level | `0` (Beginner), `1` (Intermediate), `2` (Advanced) |
 | `--category` | `-c` | Set specific vulnerability category | Any category name from the game |
 
-> Difficulty Levels:
+> 🏆 Difficulty Levels:
 - **`0` (Beginner)**: Perfect for newcomers to security concepts
 - **`1` (Intermediate)**: For those with some security knowledge  
 - **`2` (Advanced)**: For experienced security professionals
 
-> Examples:
+> 💡 Examples:
 
-**Playing random intermediate challenges:**
+**🎲 Playing random intermediate challenges:**
 ```bash
 blindspot --difficulty=1
 # or
 blindspot -d 1
 ```
 
-**Playing only injection challenges:**
+**🔒 Playing only injection challenges:**
 ```bash
 blindspot --category="Injection"
 # or
 blindspot -c "Injection"
 ```
 
-**Combining both flags:**
+**⚡ Combining both flags:**
 ```bash
 blindspot -d 1 -c "Cross-Site Scripting (XSS)"
 ```
 
-**See all available categories:**
+**📋 See all available categories:**
 ```bash
 blindspot --help
 ```
 
-> How It Works:
+> ⚙️ How It Works:
 When you use CLI flags, the game automatically:
-1. **Difficulty Mode**: If `--difficulty` is set, switches to "Random by Difficulty" mode and filters challenges by the specified level
-2. **Category Mode**: If `--category` is set, jumps directly to the specified category and starts from the first challenge
+1. **🎯 Difficulty Mode**: If `--difficulty` is set, switches to "Random by Difficulty" mode and filters challenges by the specified level
+2. **📁 Category Mode**: If `--category` is set, jumps directly to the specified category and starts from the first challenge
 
 ## 🔧 Stack
 
