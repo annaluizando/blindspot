@@ -35,6 +35,10 @@ type GameState struct {
 	VulnerabilityExplanations map[string]challenges.VulnerabilityInfo
 	RandomizedChallenges      []challenges.Challenge
 	UseRandomizedOrder        bool
+	LastError                 string
+	ErrorTimestamp            time.Time
+	LastSuccessMessage        string
+	SuccessMessageTimestamp   time.Time
 }
 
 func NewGameState() (*GameState, error) {
@@ -125,9 +129,55 @@ func (gs *GameState) ShouldReturnToCategoryExplanation() bool {
 	return gs.Progress.PendingCategoryExplanation != ""
 }
 
+func (gs *GameState) SetError(err error) {
+	if err != nil {
+		gs.LastError = err.Error()
+		gs.ErrorTimestamp = time.Now()
+	}
+}
+
+func (gs *GameState) SetSuccessMessage(message string) {
+	gs.LastSuccessMessage = message
+	gs.SuccessMessageTimestamp = time.Now()
+}
+
+func (gs *GameState) ClearError() {
+	gs.LastError = ""
+}
+
+func (gs *GameState) ClearSuccessMessage() {
+	gs.LastSuccessMessage = ""
+}
+
+func (gs *GameState) HasError() bool {
+	return gs.LastError != ""
+}
+
+func (gs *GameState) HasSuccessMessage() bool {
+	return gs.LastSuccessMessage != ""
+}
+
+func (gs *GameState) GetError() string {
+	return gs.LastError
+}
+
+func (gs *GameState) GetSuccessMessage() string {
+	return gs.LastSuccessMessage
+}
+
+func (gs *GameState) IsErrorRecent() bool {
+	return time.Since(gs.ErrorTimestamp) < 10*time.Second
+}
+
+func (gs *GameState) IsSuccessMessageRecent() bool {
+	return time.Since(gs.SuccessMessageTimestamp) < 5*time.Second
+}
+
 func (gs *GameState) ToggleShowVulnerabilityNames() {
 	gs.Settings.ShowVulnerabilityNames = !gs.Settings.ShowVulnerabilityNames
-	gs.SaveSettings()
+	if err := gs.SaveSettings(); err != nil {
+		gs.SetError(fmt.Errorf("failed to save vulnerability names setting: %w", err))
+	}
 }
 
 // Helper method to toggle challenge order setting
@@ -147,7 +197,9 @@ func (gs *GameState) ToggleGameMode() {
 		gs.SaveRandomizedOrder()
 	}
 
-	gs.SaveSettings()
+	if err := gs.SaveSettings(); err != nil {
+		gs.SetError(fmt.Errorf("failed to save game mode setting: %w", err))
+	}
 }
 
 func (gs *GameState) IsChallengeCompleted(challengeID string) bool {
@@ -156,7 +208,9 @@ func (gs *GameState) IsChallengeCompleted(challengeID string) bool {
 
 func (gs *GameState) MarkChallengeCompleted(challengeID string) {
 	gs.Progress.CompletedChallenges[challengeID] = true
-	gs.SaveProgress()
+	if err := gs.SaveProgress(); err != nil {
+		gs.SetError(fmt.Errorf("failed to save challenge completion: %w", err))
+	}
 }
 
 func (gs *GameState) GetCategoryCompletionPercentage(category string) int {
@@ -226,7 +280,9 @@ func (gs *GameState) MoveToNextChallenge() bool {
 			gs.CurrentChallengeIdx++
 			gs.Progress.CurrentChallengeIdx = gs.CurrentChallengeIdx
 			gs.Progress.IsRandomMode = true
-			gs.SaveProgress()
+			if err := gs.SaveProgress(); err != nil {
+				gs.SetError(fmt.Errorf("failed to save progress: %w", err))
+			}
 			return true
 		}
 		// No more challenges in randomized list
@@ -241,7 +297,9 @@ func (gs *GameState) MoveToNextChallenge() bool {
 		gs.CurrentChallengeIdx++
 		gs.Progress.CurrentChallengeIdx = gs.CurrentChallengeIdx
 		gs.Progress.IsRandomMode = false
-		gs.SaveProgress()
+		if err := gs.SaveProgress(); err != nil {
+			gs.SetError(fmt.Errorf("failed to save progress: %w", err))
+		}
 		return true
 	}
 
@@ -252,7 +310,9 @@ func (gs *GameState) MoveToNextChallenge() bool {
 		gs.Progress.CurrentCategoryIdx = gs.CurrentCategoryIdx
 		gs.Progress.CurrentChallengeIdx = gs.CurrentChallengeIdx
 		gs.Progress.IsRandomMode = false
-		gs.SaveProgress()
+		if err := gs.SaveProgress(); err != nil {
+			gs.SetError(fmt.Errorf("failed to save progress: %w", err))
+		}
 		return true
 	}
 
@@ -305,19 +365,20 @@ func (gs *GameState) GetNextIncompleteChallenge() (challenges.Challenge, bool) {
 
 func (gs *GameState) EraseProgressData() {
 	configDir, err := getConfigDir()
-	progressPath := filepath.Join(configDir, "progress.json")
-
 	if err != nil {
+		gs.SetError(fmt.Errorf("failed to get config directory: %w", err))
 		return
 	}
 
+	progressPath := filepath.Join(configDir, "progress.json")
 	err = os.Remove(progressPath)
 	if err != nil {
-		// to-do: handle error
+		gs.SetError(fmt.Errorf("failed to remove progress file: %w", err))
 		return
 	}
 
 	gs.resetProgress()
+	gs.SetSuccessMessage("Progress data cleared successfully")
 }
 
 func (gs *GameState) resetProgress() {
@@ -437,7 +498,9 @@ func (gs *GameState) SaveRandomizedOrder() {
 	// Save to progress
 	gs.Progress.RandomizedChallengeIDs = ids
 	gs.Progress.IsRandomMode = gs.UseRandomizedOrder
-	gs.SaveProgress()
+	if err := gs.SaveProgress(); err != nil {
+		gs.SetError(fmt.Errorf("failed to save randomized order: %w", err))
+	}
 }
 
 // Helper method to restore challenges from saved IDs

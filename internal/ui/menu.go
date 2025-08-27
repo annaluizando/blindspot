@@ -319,6 +319,9 @@ func (m *MenuView) View() string {
 	var b strings.Builder
 	b.WriteString(m.viewport.View())
 
+	notificationDisplay := NewNotificationDisplay()
+	b.WriteString(notificationDisplay.RenderAllNotifications(m.gameState))
+
 	// Help
 	if m.showHelp {
 		b.WriteString("\n" + m.help.View(MenuKeys))

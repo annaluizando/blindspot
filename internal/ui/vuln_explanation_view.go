@@ -286,6 +286,9 @@ func (v *ExplanationView) buildHelpFooter(b *strings.Builder) {
 	} else {
 		v.buildHelpText(b)
 	}
+
+	notificationDisplay := NewNotificationDisplay()
+	b.WriteString(notificationDisplay.RenderAllNotifications(v.gameState))
 }
 
 func (v *ExplanationView) buildHelpText(b *strings.Builder) {

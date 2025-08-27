@@ -380,6 +380,9 @@ func (m *ChallengeView) View() string {
 
 	b.WriteString("\n")
 
+	notificationDisplay := NewNotificationDisplay()
+	b.WriteString(notificationDisplay.RenderAllNotifications(m.gameState))
+
 	if m.showHelp {
 		b.WriteString(m.help.View(MenuKeys))
 	} else {
