@@ -54,6 +54,9 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.activeView.Init()
 
 	case backToMenuMsg:
+		m.gameState.ClearError()
+		m.gameState.ClearSuccessMessage()
+
 		if challengeView, ok := m.activeView.(*ChallengeView); ok {
 			// if challenge view is active, check the source menu and redirect to specific menu
 			switch challengeView.sourceMenu {

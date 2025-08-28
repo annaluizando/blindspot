@@ -149,6 +149,11 @@ func (gs *GameState) ClearSuccessMessage() {
 	gs.LastSuccessMessage = ""
 }
 
+func (gs *GameState) ClearMessages() {
+	gs.ClearError()
+	gs.ClearSuccessMessage()
+}
+
 func (gs *GameState) HasError() bool {
 	return gs.LastError != ""
 }

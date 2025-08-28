@@ -164,9 +164,11 @@ func (m *MenuView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case key.Matches(msg, MenuKeys.Back):
 			if m.type_ == CategoryMenu {
+				m.gameState.ClearMessages()
 				newMenu := NewMainMenu(m.gameState, m.width, m.height)
 				return newMenu, nil
 			} else if m.type_ == ChallengeMenu {
+				m.gameState.ClearMessages()
 				if m.sourceMenu == ProgressMenu {
 					newMenu := NewProgressMenu(m.gameState, m.width, m.height)
 					return newMenu, nil
@@ -174,9 +176,11 @@ func (m *MenuView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				newMenu := NewCategoriesMenu(m.gameState, m.width, m.height, MainMenu)
 				return newMenu, nil
 			} else if m.type_ == ProgressMenu {
+				m.gameState.ClearMessages()
 				newMenu := NewMainMenu(m.gameState, m.width, m.height)
 				return newMenu, nil
 			} else if m.type_ == SettingsMenu {
+				m.gameState.ClearMessages()
 				newMenu := NewMainMenu(m.gameState, m.width, m.height)
 				return newMenu, nil
 			}
@@ -242,6 +246,7 @@ func (m *MenuView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 					if found {
 						challenge = m.gameState.GetCurrentChallenge()
+						m.gameState.ClearMessages()
 						return m, func() tea.Msg {
 							return SelectChallengeMsg{Challenge: challenge}
 						}
@@ -251,25 +256,31 @@ func (m *MenuView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 
 				case 1: // Categories
+					m.gameState.ClearMessages()
 					newMenu := NewCategoriesMenu(m.gameState, m.width, m.height, MainMenu)
 					return newMenu, nil
 				case 2: // Progress
+					m.gameState.ClearMessages()
 					newMenu := NewProgressMenu(m.gameState, m.width, m.height)
 					return newMenu, nil
 				case 3: // Settings
+					m.gameState.ClearMessages()
 					newMenu := NewSettingsMenu(m.gameState, m.width, m.height)
 					return newMenu, nil
 				case 4: // Exit
 					return m, tea.Quit
 				}
 			} else if m.type_ == CategoryMenu {
+				m.gameState.ClearMessages()
 				newMenu := NewCategoryMenu(m.gameState, m.cursor, m.width, m.height, m.type_)
 				return newMenu, nil
 			} else if m.type_ == ProgressMenu {
+				m.gameState.ClearMessages()
 				newMenu := NewCategoryMenu(m.gameState, m.cursor, m.width, m.height, m.type_)
 				return newMenu, nil
 			} else if m.type_ == ChallengeMenu {
 				if strings.HasPrefix(m.items[m.cursor].ID, "explanation-") {
+					m.gameState.ClearMessages()
 					explanationView := NewExplanationView(m.gameState, nil, m.width, m.height, m.type_, false)
 					return explanationView, nil
 				}
@@ -277,6 +288,7 @@ func (m *MenuView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				for _, set := range m.gameState.ChallengeSets {
 					for _, challenge := range set.Challenges {
 						if challenge.ID == m.items[m.cursor].ID {
+							m.gameState.ClearMessages()
 							return m, func() tea.Msg {
 								return SelectChallengeMsg{Challenge: challenge}
 							}
@@ -297,6 +309,7 @@ func (m *MenuView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					newMenu := NewSettingsMenu(m.gameState, m.width, m.height)
 					return newMenu, nil
 				} else if m.cursor == 3 { // Back to Main Menu
+					m.gameState.ClearMessages()
 					newMenu := NewMainMenu(m.gameState, m.width, m.height)
 					return newMenu, nil
 				}
