@@ -3,15 +3,14 @@ package cli
 type Config struct {
 	Difficulty int
 	Category   string
-
-	flagsChanged map[string]bool
+	flagsSet   map[string]bool
 }
 
 func NewConfig() *Config {
 	return &Config{
-		Difficulty:   0,
-		Category:     "",
-		flagsChanged: make(map[string]bool),
+		Difficulty: 0,
+		Category:   "",
+		flagsSet:   make(map[string]bool),
 	}
 }
 
@@ -28,10 +27,10 @@ func (c *Config) SetCategory(category string) {
 	c.Category = category
 }
 
-func (c *Config) SetFlagChanged(flag string, changed bool) {
-	c.flagsChanged[flag] = changed
+func (c *Config) SetFlag(flag string, changed bool) {
+	c.flagsSet[flag] = changed
 }
 
-func (c *Config) WasFlagChanged(flag string) bool {
-	return c.flagsChanged[flag]
+func (c *Config) WasFlagSet(flag string) bool {
+	return c.flagsSet[flag]
 }

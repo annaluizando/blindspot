@@ -8,13 +8,11 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Resource represents an educational resource about a vulnerability
 type Resource struct {
 	Title string `yaml:"title"`
 	URL   string `yaml:"url"`
 }
 
-// contains detailed information about a security vulnerability
 type VulnerabilityInfo struct {
 	Name             string     `yaml:"name"`
 	ShortDescription string     `yaml:"short_description"`
@@ -22,19 +20,17 @@ type VulnerabilityInfo struct {
 	Resources        []Resource `yaml:"resources"`
 }
 
-// represents the structure of the vulnerabilities.yaml file
 type VulnerabilitiesData struct {
 	Vulnerabilities []VulnerabilityInfo `yaml:"vulnerabilities"`
 }
 
-// loads vulnerability explanations from the YAML file
 func LoadVulnerabilityExplanations() (map[string]VulnerabilityInfo, error) {
 	searchPaths := []string{
-		"assets/vuln_explanations.yaml",       // From project root
-		"../assets/vuln_explanations.yaml",    // If running from cmd/security-game
-		"../../assets/vuln_explanations.yaml", // If running from elsewhere
-		"./vuln_explanations.yaml",            // Current directory
-		"vuln_explanations.yaml",              // Also try just the filename directly
+		"assets/vuln_explanations.yaml",
+		"../assets/vuln_explanations.yaml",
+		"../../assets/vuln_explanations.yaml",
+		"./vuln_explanations.yaml",
+		"vuln_explanations.yaml",
 	}
 
 	var yamlData []byte
@@ -47,7 +43,6 @@ func LoadVulnerabilityExplanations() (map[string]VulnerabilityInfo, error) {
 	}
 
 	if err != nil {
-		// Try to find it relative to the executable as a fallback
 		execPath, err := os.Executable()
 		if err == nil {
 			execDir := filepath.Dir(execPath)
@@ -60,19 +55,16 @@ func LoadVulnerabilityExplanations() (map[string]VulnerabilityInfo, error) {
 		}
 	}
 
-	// Parse the YAML file
 	var vulnData VulnerabilitiesData
 	err = yaml.Unmarshal(yamlData, &vulnData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse vulnerabilities.yaml: %w", err)
 	}
 
-	// Create a map for easy lookup by vulnerability name
 	vulnMap := make(map[string]VulnerabilityInfo)
 	for _, vuln := range vulnData.Vulnerabilities {
 		vulnMap[vuln.Name] = vuln
 	}
 
-	fmt.Printf("Loaded %d vulnerability explanations\n", len(vulnMap))
 	return vulnMap, nil
 }

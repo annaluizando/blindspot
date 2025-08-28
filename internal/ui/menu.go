@@ -106,7 +106,6 @@ func (m *MenuView) Init() tea.Cmd {
 	return nil
 }
 
-// handles messages and user input
 func (m *MenuView) updateContent() {
 	var b strings.Builder
 
@@ -136,17 +135,14 @@ func (m *MenuView) updateContent() {
 		}
 	}
 
-	// Calculate space for help
 	helpHeight := 1
 	if m.showHelp {
-		helpHeight = 4 // Full help takes more space
+		helpHeight = 4
 	}
 
-	// Create or update the viewport
 	m.contentStr = b.String()
 	contentHeight := strings.Count(m.contentStr, "\n") + 1
 
-	// If content is shorter than available height, no scrolling needed
 	viewportHeight := min(contentHeight, m.height-helpHeight-1)
 
 	m.viewport = viewport.New(m.width, viewportHeight)
@@ -193,10 +189,9 @@ func (m *MenuView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.cursor > 0 {
 				m.cursor--
 				m.updateContent()
-				// keep the cursor visible
 				cursorPos := strings.Index(m.contentStr, ">")
 				if cursorPos > -1 {
-					m.viewport.SetYOffset(0) // Reset to top first
+					m.viewport.SetYOffset(0)
 					linesBefore := strings.Count(m.contentStr[:cursorPos], "\n")
 					if linesBefore > m.viewport.Height/2 {
 						m.viewport.SetYOffset(linesBefore - m.viewport.Height/2)
@@ -208,7 +203,6 @@ func (m *MenuView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.cursor < len(m.items)-1 {
 				m.cursor++
 				m.updateContent()
-				// keep the cursor visible
 				cursorPos := strings.Index(m.contentStr, ">")
 				if cursorPos > -1 {
 					m.viewport.GotoTop()
@@ -251,7 +245,7 @@ func (m *MenuView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 							return SelectChallengeMsg{Challenge: challenge}
 						}
 					} else {
-						newCompletion := NewCompletionView(m.gameState, m.width, m.height, MainMenu)
+						newCompletion := CompletionViewScreen(m.gameState, m.width, m.height, MainMenu)
 						return newCompletion, nil
 					}
 
@@ -323,7 +317,6 @@ func (m *MenuView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.updateContent()
 	}
 
-	// Handle viewport updates
 	m.viewport, cmd = m.viewport.Update(msg)
 	return m, cmd
 }
@@ -689,7 +682,6 @@ func NewSettingsMenu(gs *game.GameState, width, height int) *MenuView {
 	return menu
 }
 
-// ---- helpers ----
 func (k MenuKeyMap) ShortHelp() []key.Binding {
 	return []key.Binding{k.Help, k.Quit}
 }

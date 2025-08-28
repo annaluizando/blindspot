@@ -34,19 +34,16 @@ func HighlightCode(code string, language string) string {
 		style = styles.Fallback
 	}
 
-	// Use terminal formatter
 	formatter := formatters.Get("terminal")
 	if formatter == nil {
 		formatter = formatters.Fallback
 	}
 
-	// Tokenize the code
 	iterator, err := lexer.Tokenise(nil, code)
 	if err != nil {
 		return code
 	}
 
-	// Create a buffer to hold the highlighted code
 	var buf strings.Builder
 	err = formatter.Format(&buf, style, iterator)
 	if err != nil {
@@ -89,28 +86,4 @@ func GetLanguageFromChallenge(filename string) string {
 	default:
 		return ""
 	}
-}
-
-// To be used in code fix
-// takes a code string and highlights a specific line or pattern
-// that contains the vulnerability to make it more obvious
-func HighlightVulnerability(code string, vulnerablePattern string) string {
-	if vulnerablePattern == "" {
-		return code // Return unchanged if no pattern provided
-	}
-
-	// Simple implementation: just highlight the vulnerable part with terminal escapes
-	// This assumes we're using a terminal that supports ANSI color codes
-	const redBackground = "\x1b[41m" // Red background
-	const resetColor = "\x1b[0m"     // Reset colors
-
-	// Replace the pattern with a highlighted version
-	highlighted := strings.Replace(
-		code,
-		vulnerablePattern,
-		redBackground+vulnerablePattern+resetColor,
-		-1,
-	)
-
-	return highlighted
 }

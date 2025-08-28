@@ -35,6 +35,7 @@ type GameState struct {
 	VulnerabilityExplanations map[string]challenges.VulnerabilityInfo
 	RandomizedChallenges      []challenges.Challenge
 	UseRandomizedOrder        bool
+	StartedViaCLI             bool
 	LastError                 string
 	ErrorTimestamp            time.Time
 	LastSuccessMessage        string
@@ -47,7 +48,6 @@ func NewGameState() (*GameState, error) {
 		return nil, err
 	}
 
-	// Load challenges from challenges.yaml
 	challengeSets, err := challenges.LoadChallenges()
 	if err != nil {
 		return nil, err
@@ -63,10 +63,8 @@ func NewGameState() (*GameState, error) {
 		}
 	}
 
-	// Load or create user settings
 	settings, err := loadSettings(configDir)
 	if err != nil {
-		// If no settings file exists, create a new one with defaults
 		settings = UserSettings{
 			ShowVulnerabilityNames: false,
 			GameMode:               "category",
@@ -75,7 +73,6 @@ func NewGameState() (*GameState, error) {
 
 	vulnExplanations, err := challenges.LoadVulnerabilityExplanations()
 	if err != nil {
-		// Just log the error but continue - this is non-critical
 		fmt.Printf("Warning: Could not load vulnerability explanations: %s\n", err)
 		vulnExplanations = make(map[string]challenges.VulnerabilityInfo)
 	}
@@ -91,14 +88,10 @@ func NewGameState() (*GameState, error) {
 		UseRandomizedOrder:        settings.GameMode == "random-by-difficulty",
 	}
 
-	// Generate or restore the randomized challenges
 	if len(progress.RandomizedChallengeIDs) > 0 {
-		// Restore the previously saved randomized order
 		gs.RandomizedChallenges = gs.restoreRandomizedChallenges(progress.RandomizedChallengeIDs)
 	} else {
-		// Generate a new randomized order
 		gs.RandomizedChallenges = gs.GetChallengesGroupedByDifficulty()
-		// Save the order of IDs to progress
 		gs.SaveRandomizedOrder()
 	}
 
@@ -110,7 +103,6 @@ func (gs *GameState) GetVulnerabilityExplanation(category string) (challenges.Vu
 	return explanation, found
 }
 
-// SetPendingCategoryExplanation marks that the user should return to a category explanation
 func (gs *GameState) SetPendingCategoryExplanation(category string) {
 	gs.Progress.PendingCategoryExplanation = category
 	gs.SaveProgress()
@@ -123,10 +115,6 @@ func (gs *GameState) ClearPendingCategoryExplanation() {
 
 func (gs *GameState) GetPendingCategoryExplanation() string {
 	return gs.Progress.PendingCategoryExplanation
-}
-
-func (gs *GameState) ShouldReturnToCategoryExplanation() bool {
-	return gs.Progress.PendingCategoryExplanation != ""
 }
 
 func (gs *GameState) SetError(err error) {
@@ -185,7 +173,6 @@ func (gs *GameState) ToggleShowVulnerabilityNames() {
 	}
 }
 
-// Helper method to toggle challenge order setting
 func (gs *GameState) ToggleGameMode() {
 	if gs.Settings.GameMode == "category" {
 		gs.Settings.GameMode = "random-by-difficulty"
@@ -193,10 +180,8 @@ func (gs *GameState) ToggleGameMode() {
 		gs.Settings.GameMode = "category"
 	}
 
-	// Update the UseRandomizedOrder flag to match the setting
 	gs.UseRandomizedOrder = gs.Settings.GameMode == "random-by-difficulty"
 
-	// If we're switching to random mode and don't have randomized challenges yet, generate them
 	if gs.UseRandomizedOrder && len(gs.RandomizedChallenges) == 0 {
 		gs.RandomizedChallenges = gs.GetChallengesGroupedByDifficulty()
 		gs.SaveRandomizedOrder()
@@ -221,7 +206,6 @@ func (gs *GameState) MarkChallengeCompleted(challengeID string) {
 func (gs *GameState) GetCategoryCompletionPercentage(category string) int {
 	var total, completed int
 
-	// Find the category
 	for _, set := range gs.ChallengeSets {
 		if set.Category == category {
 			total = len(set.Challenges)
@@ -262,24 +246,17 @@ func (gs *GameState) GetTotalCompletionPercentage() int {
 
 func (gs *GameState) GetCurrentChallenge() challenges.Challenge {
 	if gs.UseRandomizedOrder && len(gs.RandomizedChallenges) > 0 {
-		// When in randomized mode, use the currentChallengeIdx directly
-		// on the randomized list (making sure not to go out of bounds)
 		if gs.CurrentChallengeIdx < len(gs.RandomizedChallenges) {
 			return gs.RandomizedChallenges[gs.CurrentChallengeIdx]
 		}
-		// If out of bounds, return the first challenge
 		return gs.RandomizedChallenges[0]
 	}
-	// Otherwise, use the original order by category
-	// Add bounds checking to prevent panics
 	if gs.CurrentCategoryIdx >= len(gs.ChallengeSets) {
-		// If category index is out of bounds, reset to first category
 		gs.CurrentCategoryIdx = 0
 		gs.Progress.CurrentCategoryIdx = 0
 	}
 
 	if gs.CurrentChallengeIdx >= len(gs.ChallengeSets[gs.CurrentCategoryIdx].Challenges) {
-		// If challenge index is out of bounds, reset to first challenge
 		gs.CurrentChallengeIdx = 0
 		gs.Progress.CurrentChallengeIdx = 0
 	}
@@ -289,7 +266,6 @@ func (gs *GameState) GetCurrentChallenge() challenges.Challenge {
 
 func (gs *GameState) GetCurrentCategory() string {
 	if gs.CurrentCategoryIdx >= len(gs.ChallengeSets) {
-		// If category index is out of bounds, reset to first category
 		gs.CurrentCategoryIdx = 0
 		gs.Progress.CurrentCategoryIdx = 0
 	}
@@ -298,7 +274,6 @@ func (gs *GameState) GetCurrentCategory() string {
 
 func (gs *GameState) MoveToNextChallenge() bool {
 	if gs.UseRandomizedOrder {
-		// In randomized mode, just increment the challenge index
 		if gs.CurrentChallengeIdx < len(gs.RandomizedChallenges)-1 {
 			gs.CurrentChallengeIdx++
 			gs.Progress.CurrentChallengeIdx = gs.CurrentChallengeIdx
@@ -308,14 +283,11 @@ func (gs *GameState) MoveToNextChallenge() bool {
 			}
 			return true
 		}
-		// No more challenges in randomized list
 		return false
 	}
 
-	// Original behavior for category-based navigation
 	currentSet := gs.ChallengeSets[gs.CurrentCategoryIdx]
 
-	// If there are more challenges in current category
 	if gs.CurrentChallengeIdx < len(currentSet.Challenges)-1 {
 		gs.CurrentChallengeIdx++
 		gs.Progress.CurrentChallengeIdx = gs.CurrentChallengeIdx
@@ -326,7 +298,6 @@ func (gs *GameState) MoveToNextChallenge() bool {
 		return true
 	}
 
-	// If there are more categories
 	if gs.CurrentCategoryIdx < len(gs.ChallengeSets)-1 {
 		gs.CurrentCategoryIdx++
 		gs.CurrentChallengeIdx = 0
@@ -339,7 +310,6 @@ func (gs *GameState) MoveToNextChallenge() bool {
 		return true
 	}
 
-	// No more challenges
 	return false
 }
 
@@ -365,7 +335,6 @@ func (gs *GameState) GetNextIncompleteChallenge() (challenges.Challenge, bool) {
 		categoryIdx++
 	}
 
-	// If we got here, try from the beginning (in case we started mid-way)
 	if startCategoryIdx > 0 || startChallengeIdx > 0 {
 		for categoryIdx := 0; categoryIdx <= startCategoryIdx; categoryIdx++ {
 			maxChallengeIdx := len(gs.ChallengeSets[categoryIdx].Challenges)
@@ -382,7 +351,6 @@ func (gs *GameState) GetNextIncompleteChallenge() (challenges.Challenge, bool) {
 		}
 	}
 
-	// No incomplete challenges found
 	return challenges.Challenge{}, false
 }
 
@@ -443,15 +411,14 @@ func loadProgress(configDir string) (UserProgress, error) {
 	return progress, nil
 }
 
-// Loads user settings from file
 func loadSettings(configDir string) (UserSettings, error) {
 	settingsPath := filepath.Join(configDir, "settings.json")
 
 	data, err := os.ReadFile(settingsPath)
 	if err != nil {
 		return UserSettings{
-			ShowVulnerabilityNames: false,      // Default value
-			GameMode:               "category", // Default to category mode
+			ShowVulnerabilityNames: false,
+			GameMode:               "category",
 		}, err
 	}
 
@@ -459,19 +426,17 @@ func loadSettings(configDir string) (UserSettings, error) {
 	err = json.Unmarshal(data, &settings)
 	if err != nil {
 		return UserSettings{
-			ShowVulnerabilityNames: false,      // Default value
-			GameMode:               "category", // Default to category mode
+			ShowVulnerabilityNames: false,
+			GameMode:               "category",
 		}, err
 	}
 
 	return settings, nil
 }
 
-// Saves the current user progress
 func (gs *GameState) SaveProgress() error {
 	progressPath := filepath.Join(gs.ConfigDir, "progress.json")
 
-	// Update game state in progress struct
 	gs.Progress.CurrentCategoryIdx = gs.CurrentCategoryIdx
 	gs.Progress.CurrentChallengeIdx = gs.CurrentChallengeIdx
 
@@ -483,7 +448,6 @@ func (gs *GameState) SaveProgress() error {
 	return os.WriteFile(progressPath, data, 0644)
 }
 
-// Saves the current user settings
 func (gs *GameState) SaveSettings() error {
 	settingsPath := filepath.Join(gs.ConfigDir, "settings.json")
 
@@ -495,7 +459,6 @@ func (gs *GameState) SaveSettings() error {
 	return os.WriteFile(settingsPath, data, 0644)
 }
 
-// Helper function to get config directory
 func getConfigDir() (string, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
@@ -510,15 +473,12 @@ func getConfigDir() (string, error) {
 	return configDir, nil
 }
 
-// Helper method to save the current randomized order to progress
 func (gs *GameState) SaveRandomizedOrder() {
-	// Extract challenge IDs in the current randomized order
 	ids := make([]string, len(gs.RandomizedChallenges))
 	for i, challenge := range gs.RandomizedChallenges {
 		ids[i] = challenge.ID
 	}
 
-	// Save to progress
 	gs.Progress.RandomizedChallengeIDs = ids
 	gs.Progress.IsRandomMode = gs.UseRandomizedOrder
 	if err := gs.SaveProgress(); err != nil {
@@ -526,26 +486,22 @@ func (gs *GameState) SaveRandomizedOrder() {
 	}
 }
 
-// Helper method to restore challenges from saved IDs
 func (gs *GameState) restoreRandomizedChallenges(ids []string) []challenges.Challenge {
 	result := make([]challenges.Challenge, 0, len(ids))
 	challengeMap := make(map[string]challenges.Challenge)
 
-	// Create a map of all challenges by ID for quick lookup
 	for _, set := range gs.ChallengeSets {
 		for _, challenge := range set.Challenges {
 			challengeMap[challenge.ID] = challenge
 		}
 	}
 
-	// Restore the challenges in the saved order
 	for _, id := range ids {
 		if challenge, found := challengeMap[id]; found {
 			result = append(result, challenge)
 		}
 	}
 
-	// If the restored list is empty (which shouldn't happen), generate a new one
 	if len(result) == 0 {
 		return gs.GetChallengesGroupedByDifficulty()
 	}
@@ -553,7 +509,6 @@ func (gs *GameState) restoreRandomizedChallenges(ids []string) []challenges.Chal
 	return result
 }
 
-// Helper function to shuffle a slice of challenges
 func shuffleChallenge(challenges []challenges.Challenge) {
 	rand.New(rand.NewSource(time.Now().UnixNano()))
 	rand.Shuffle(len(challenges), func(i, j int) {
@@ -561,8 +516,6 @@ func shuffleChallenge(challenges []challenges.Challenge) {
 	})
 }
 
-// returns all challenges sorted by difficulty
-// and randomized within each difficulty group
 func (gs *GameState) GetChallengesGroupedByDifficulty() []challenges.Challenge {
 	beginnerChallenges := []challenges.Challenge{}
 	intermediateChallenges := []challenges.Challenge{}
@@ -585,7 +538,6 @@ func (gs *GameState) GetChallengesGroupedByDifficulty() []challenges.Challenge {
 	shuffleChallenge(intermediateChallenges)
 	shuffleChallenge(advancedChallenges)
 
-	// Combine challenges in order of difficulty (beginner -> intermediate -> advanced)
 	result := append(beginnerChallenges, intermediateChallenges...)
 	result = append(result, advancedChallenges...)
 
@@ -593,11 +545,17 @@ func (gs *GameState) GetChallengesGroupedByDifficulty() []challenges.Challenge {
 }
 
 func (gs *GameState) ShouldShowVulnerabilityExplanation(category string) bool {
-	if gs.UseRandomizedOrder {
+	if gs.UseRandomizedOrder || gs.StartedViaCLI {
 		return false
 	}
-
 	return gs.GetCategoryCompletionPercentage(category) == 100
+}
+
+func (gs *GameState) ShouldReturnToCategoryExplanation() bool {
+	if gs.UseRandomizedOrder || gs.StartedViaCLI {
+		return false
+	}
+	return gs.Progress.PendingCategoryExplanation != ""
 }
 
 func (gs *GameState) AddErrorCount(challengeCategory string) {

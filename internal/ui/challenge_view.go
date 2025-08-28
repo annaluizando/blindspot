@@ -277,32 +277,43 @@ func (m *ChallengeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Handle challenge completion navigation
 		if m.hasAnswered && m.isCorrect && key.Matches(msg, keys.Next) {
 			currentCategory := m.gameState.GetCurrentCategory()
-			shouldShow := m.gameState.ShouldShowVulnerabilityExplanation(currentCategory)
+			currentCategoryIdx := m.gameState.CurrentCategoryIdx
+			currentChallengeIdx := m.gameState.CurrentChallengeIdx
 
-			if shouldShow {
-				m.gameState.SetPendingCategoryExplanation(currentCategory)
-				explanationView := NewExplanationView(m.gameState, &m.challenge, m.width, m.height, m.sourceMenu, true)
-				return explanationView, explanationView.Init()
-			} else if m.gameState.MoveToNextChallenge() {
-				challenge := m.gameState.GetCurrentChallenge()
-				challengeView := NewChallengeView(m.gameState, challenge, m.width, m.height, MainMenu)
-				return challengeView, challengeView.Init()
-			} else {
-				// No more challenges available, check if we should show completion view
-				if m.gameState.GetTotalCompletionPercentage() == 100 {
-					// All challenges completed, show completion view
-					return NewCompletionView(m.gameState, m.width, m.height, MainMenu), nil
+			// Check if this was the last challenge in the current category
+			currentSet := m.gameState.ChallengeSets[currentCategoryIdx]
+			isLastChallengeInCategory := currentChallengeIdx == len(currentSet.Challenges)-1
+
+			if isLastChallengeInCategory {
+				// This was the last challenge in the category - check if we should show explanation
+				shouldShow := m.gameState.ShouldShowVulnerabilityExplanation(currentCategory)
+
+				if shouldShow {
+					m.gameState.SetPendingCategoryExplanation(currentCategory)
+					explanationView := NewExplanationView(m.gameState, &m.challenge, m.width, m.height, m.sourceMenu, true)
+					return explanationView, explanationView.Init()
 				} else {
-					// Category completed but there are more challenges in other categories
-					// Try to get the next incomplete challenge from any category
-					nextChallenge, found := m.gameState.GetNextIncompleteChallenge()
-					if found {
-						challengeView := NewChallengeView(m.gameState, nextChallenge, m.width, m.height, MainMenu)
+					// If started via CLI, this means all intended challenges are completed
+					if m.gameState.StartedViaCLI {
+						return CLICompletionViewScreen(m.gameState, m.width, m.height), nil
+					}
+
+					// Move to next category/challenge (normal game mode)
+					if m.gameState.MoveToNextChallenge() {
+						challenge := m.gameState.GetCurrentChallenge()
+						challengeView := NewChallengeView(m.gameState, challenge, m.width, m.height, MainMenu)
 						return challengeView, challengeView.Init()
 					} else {
-						// No more incomplete challenges, show completion view
-						return NewCompletionView(m.gameState, m.width, m.height, MainMenu), nil
+						// No more challenges available, show completion view
+						return CompletionViewScreen(m.gameState, m.width, m.height, MainMenu), nil
 					}
+				}
+			} else {
+				// More challenges in current category, move to next challenge
+				if m.gameState.MoveToNextChallenge() {
+					challenge := m.gameState.GetCurrentChallenge()
+					challengeView := NewChallengeView(m.gameState, challenge, m.width, m.height, MainMenu)
+					return challengeView, challengeView.Init()
 				}
 			}
 		}
@@ -312,6 +323,9 @@ func (m *ChallengeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		case key.Matches(msg, keys.Back):
+			if m.gameState.StartedViaCLI {
+				return m, nil
+			}
 			return m, func() tea.Msg {
 				return backToMenuMsg{}
 			}
@@ -410,6 +424,9 @@ func (m *ChallengeView) View() string {
 		if hasScroll {
 			helpText += " | j/k to scroll content"
 		}
+		if !m.gameState.StartedViaCLI {
+			helpText += " | ESC to go back"
+		}
 		b.WriteString(helpHintStyle.Render(helpText))
 	}
 
@@ -421,14 +438,20 @@ func (k keyMap) ShortHelp() []key.Binding {
 	return []key.Binding{k.Help, k.Quit}
 }
 
-func (k keyMap) FullHelp() [][]key.Binding {
-	return [][]key.Binding{
-		{k.Up, k.Down},
-		{k.ScrollUp, k.ScrollDown},
-		{k.Select, k.Back},
-		{k.Help, k.Quit},
-		{k.ShowHint, k.Next},
+func (m *ChallengeView) FullHelp() [][]key.Binding {
+	helpKeys := [][]key.Binding{
+		{keys.Up, keys.Down},
+		{keys.ScrollUp, keys.ScrollDown},
+		{keys.Select},
+		{keys.Help, keys.Quit},
+		{keys.ShowHint, keys.Next},
 	}
+
+	if !m.gameState.StartedViaCLI {
+		helpKeys[2] = append(helpKeys[2], keys.Back)
+	}
+
+	return helpKeys
 }
 
 // ensureCursorVisible ensures the selected option is visible in the viewport

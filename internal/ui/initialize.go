@@ -12,7 +12,6 @@ type AppModel struct {
 	width, height int
 }
 
-// Creates and configures a new BubbleTea program
 func InitializeUI(gameState *game.GameState) (*tea.Program, error) {
 	app := AppModel{
 		gameState:  gameState,
@@ -30,12 +29,10 @@ func InitializeUI(gameState *game.GameState) (*tea.Program, error) {
 	return program, nil
 }
 
-// initializes the application
 func (m AppModel) Init() tea.Cmd {
 	return m.activeView.Init()
 }
 
-// handles messages and user input
 func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
@@ -44,21 +41,17 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		m.height = msg.Height
 
-		// Update active view with new size
 		m.activeView, cmd = m.activeView.Update(msg)
 		return m, cmd
 
 	case SelectChallengeMsg:
-		// Switch to the challenge view for the selected challenge
 		m.activeView = NewChallengeView(m.gameState, msg.Challenge, m.width, m.height, MainMenu)
 		return m, m.activeView.Init()
 
 	case backToMenuMsg:
-		m.gameState.ClearError()
-		m.gameState.ClearSuccessMessage()
+		m.gameState.ClearMessages()
 
 		if challengeView, ok := m.activeView.(*ChallengeView); ok {
-			// if challenge view is active, check the source menu and redirect to specific menu
 			switch challengeView.sourceMenu {
 			case MainMenu:
 				m.activeView = NewMainMenu(m.gameState, m.width, m.height)
@@ -76,7 +69,6 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.activeView = NewMainMenu(m.gameState, m.width, m.height)
 			}
 		} else if explanationView, ok := m.activeView.(*ExplanationView); ok {
-			// if explanation view is active, go back to specific menu based on source
 			switch explanationView.sourceMenu {
 			case MainMenu:
 				m.activeView = NewMainMenu(m.gameState, m.width, m.height)
@@ -90,7 +82,6 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.activeView = NewMainMenu(m.gameState, m.width, m.height)
 			}
 		} else if menuView, ok := m.activeView.(*MenuView); ok {
-			// if coming from challenge menu, check its source
 			if menuView.type_ == ChallengeMenu {
 				if menuView.sourceMenu == ProgressMenu {
 					m.activeView = NewProgressMenu(m.gameState, m.width, m.height)
@@ -98,11 +89,9 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.activeView = NewCategoriesMenu(m.gameState, m.width, m.height, MainMenu)
 				}
 			} else {
-				// For other menu types, go back to main menu
 				m.activeView = NewMainMenu(m.gameState, m.width, m.height)
 			}
 		} else {
-			// For any other view type, default to main menu
 			m.activeView = NewMainMenu(m.gameState, m.width, m.height)
 		}
 		return m, m.activeView.Init()
@@ -116,18 +105,16 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if found {
 				m.activeView = NewChallengeView(m.gameState, challenge, m.width, m.height, MainMenu)
 			} else {
-				m.activeView = NewCompletionView(m.gameState, m.width, m.height, MainMenu)
+				m.activeView = CompletionViewScreen(m.gameState, m.width, m.height, MainMenu)
 			}
 		}
 		return m, m.activeView.Init()
 	}
 
-	// Handle updates in the active view
 	m.activeView, cmd = m.activeView.Update(msg)
 	return m, cmd
 }
 
-// renders the application
 func (m AppModel) View() string {
 	return m.activeView.View()
 }

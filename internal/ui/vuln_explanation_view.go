@@ -173,7 +173,7 @@ func (v *ExplanationView) handleNextAction() (tea.Model, tea.Cmd) {
 				return challengeView, challengeView.Init()
 			} else {
 				// All challenges completed, go to completion view
-				return NewCompletionView(v.gameState, v.width, v.height, MainMenu), nil
+				return CompletionViewScreen(v.gameState, v.width, v.height, MainMenu), nil
 			}
 		}
 	}
@@ -184,6 +184,10 @@ func (v *ExplanationView) handleNextAction() (tea.Model, tea.Cmd) {
 
 // handleBackAction handles the back action based on context
 func (v *ExplanationView) handleBackAction() (tea.Model, tea.Cmd) {
+	if v.gameState.StartedViaCLI {
+		return v, tea.Quit
+	}
+
 	if v.sourceMenu == ChallengeMenu {
 		return v.navigateToCategoryView()
 	}

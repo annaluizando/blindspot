@@ -132,23 +132,3 @@ var (
 			Foreground(mutedColor).
 			Faint(true)
 )
-
-// RenderBox creates a styled box with optional title
-func RenderBox(content string, title string) string {
-	boxStyle := lipgloss.NewStyle().
-		BorderStyle(lipgloss.RoundedBorder()).
-		BorderForeground(secondaryColor).
-		Padding(1, 2)
-
-	if title != "" {
-		return boxStyle.BorderTop(true).Render(
-			lipgloss.JoinVertical(
-				lipgloss.Left,
-				lipgloss.NewStyle().Foreground(primaryColor).Bold(true).Render(" "+title+" "),
-				content,
-			),
-		)
-	}
-
-	return boxStyle.Render(content)
-}

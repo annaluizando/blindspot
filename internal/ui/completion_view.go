@@ -54,15 +54,17 @@ var (
 	contributionStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF87FF")).Italic(true)
 )
 
-func NewCompletionView(gs *game.GameState, width, height int, sourceMenu MenuType) *CompletionView {
-	return &CompletionView{
+func CompletionViewScreen(gs *game.GameState, width, height int, source MenuType) *CompletionView {
+	completionView := &CompletionView{
 		gameState:  gs,
 		width:      width,
 		height:     height,
-		sourceMenu: sourceMenu,
+		sourceMenu: source,
 		help:       help.New(),
 		showHelp:   false,
 	}
+
+	return completionView
 }
 
 func (v *CompletionView) Init() tea.Cmd {
@@ -82,7 +84,9 @@ func (v *CompletionView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return v, nil
 
 		case key.Matches(msg, CompletionKeys.Next), key.Matches(msg, CompletionKeys.Back):
-			// return to main menu
+			if v.gameState.StartedViaCLI {
+				return v, tea.Quit
+			}
 			return v, func() tea.Msg {
 				return backToMenuMsg{}
 			}
@@ -137,7 +141,11 @@ func (v *CompletionView) View() string {
 	if v.showHelp {
 		b.WriteString("\n" + v.help.View(CompletionKeys))
 	} else {
-		b.WriteString("\n" + helpHintStyle.Render("Press 'Enter'/'N' or 'Esc' to return to main menu"))
+		if v.gameState.StartedViaCLI {
+			b.WriteString("\n" + helpHintStyle.Render("Press 'Enter'/'N' or 'Esc' to quit"))
+		} else {
+			b.WriteString("\n" + helpHintStyle.Render("Press 'Enter'/'N' or 'Esc' to return to main menu"))
+		}
 		b.WriteString("\n" + helpHintStyle.Render("Press ? for more options"))
 	}
 

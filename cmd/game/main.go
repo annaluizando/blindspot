@@ -23,9 +23,9 @@ insecure code practices and train yourself!`,
 	Run: func(cmd *cobra.Command, args []string) {
 		config := cli.NewConfig()
 		config.SetDifficulty(difficulty)
-		config.SetFlagChanged("difficulty", cmd.Flags().Changed("difficulty"))
+		config.SetFlag("difficulty", cmd.Flags().Changed("difficulty"))
 		config.SetCategory(category)
-		config.SetFlagChanged("category", cmd.Flags().Changed("category"))
+		config.SetFlag("category", cmd.Flags().Changed("category"))
 
 		runner := cli.NewRunner(config)
 		runner.Run()
