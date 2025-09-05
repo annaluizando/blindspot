@@ -15,11 +15,9 @@ import (
 	"blindspot/internal/utils"
 )
 
-// Navigation messages
 type nextChallengeMsg struct{}
 type backToMenuMsg struct{}
 
-// ExplanationKeyMap defines keybindings for the explanation view
 type ExplanationKeyMap struct {
 	ScrollUp   key.Binding
 	ScrollDown key.Binding
@@ -29,7 +27,6 @@ type ExplanationKeyMap struct {
 	Quit       key.Binding
 }
 
-// ExplanationView displays vulnerability explanations with scrolling support
 type ExplanationView struct {
 	gameState        *game.GameState
 	challenge        *challenges.Challenge
@@ -43,6 +40,7 @@ type ExplanationView struct {
 	isFromCompletion bool
 	viewport         viewport.Model
 	contentStr       string
+	keys             ExplanationKeyMap
 }
 
 // ExplanationKeys defines the key bindings for the explanation view
@@ -82,7 +80,6 @@ var (
 	completedStyle            = lipgloss.NewStyle().Foreground(lipgloss.Color("#00CC44")).Bold(true)      // Success green
 )
 
-// NewExplanationView creates a new explanation view
 func NewExplanationView(gs *game.GameState, challenge *challenges.Challenge, width, height int, sourceMenu MenuType, isFromCompletion bool) *ExplanationView {
 	explanation, found := gs.GetVulnerabilityExplanation(gs.GetCurrentCategory())
 
@@ -97,6 +94,7 @@ func NewExplanationView(gs *game.GameState, challenge *challenges.Challenge, wid
 		help:             help.New(),
 		showHelp:         false,
 		isFromCompletion: isFromCompletion,
+		keys:             NewExplanationKeyMap(),
 	}
 
 	explanationView.updateViewportDimensions()
@@ -117,24 +115,24 @@ func (v *ExplanationView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch {
-		case key.Matches(msg, ExplanationKeys.Quit):
+		case key.Matches(msg, v.keys.Quit):
 			return v, tea.Quit
 
-		case key.Matches(msg, ExplanationKeys.Help):
+		case key.Matches(msg, v.keys.Help):
 			v.showHelp = !v.showHelp
 			v.updateContent()
 			return v, nil
 
-		case key.Matches(msg, ExplanationKeys.Next):
+		case key.Matches(msg, v.keys.Next):
 			return v.handleNextAction()
 
-		case key.Matches(msg, keys.ScrollUp):
+		case key.Matches(msg, v.keys.ScrollUp):
 			v.viewport.LineUp(1)
 
-		case key.Matches(msg, keys.ScrollDown):
+		case key.Matches(msg, v.keys.ScrollDown):
 			v.viewport.LineDown(1)
 
-		case key.Matches(msg, ExplanationKeys.Back):
+		case key.Matches(msg, v.keys.Back):
 			return v.handleBackAction()
 		}
 
@@ -148,7 +146,6 @@ func (v *ExplanationView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return v, cmd
 }
 
-// handleNextAction handles the next action based on context
 func (v *ExplanationView) handleNextAction() (tea.Model, tea.Cmd) {
 	// Check if there was a pending explanation before clearing it
 	hadPendingExplanation := v.gameState.GetPendingCategoryExplanation() != ""
@@ -182,7 +179,6 @@ func (v *ExplanationView) handleNextAction() (tea.Model, tea.Cmd) {
 	return v.navigateToCategoryView()
 }
 
-// handleBackAction handles the back action based on context
 func (v *ExplanationView) handleBackAction() (tea.Model, tea.Cmd) {
 	if v.gameState.StartedViaCLI {
 		return v, tea.Quit
@@ -198,7 +194,6 @@ func (v *ExplanationView) handleBackAction() (tea.Model, tea.Cmd) {
 	}
 }
 
-// navigateToCategoryView navigates back to the category view
 func (v *ExplanationView) navigateToCategoryView() (tea.Model, tea.Cmd) {
 	for i, set := range v.gameState.ChallengeSets {
 		if set.Category == v.gameState.GetCurrentCategory() {
@@ -208,13 +203,11 @@ func (v *ExplanationView) navigateToCategoryView() (tea.Model, tea.Cmd) {
 	return v, nil
 }
 
-// updateViewportDimensions updates the viewport dimensions
 func (v *ExplanationView) updateViewportDimensions() {
 	viewportHeight := max(v.height-4, 5)
 	v.viewport = viewport.New(v.width, viewportHeight)
 }
 
-// updateContent updates the content and viewport
 func (v *ExplanationView) updateContent() {
 	var b strings.Builder
 
@@ -294,7 +287,7 @@ func (v *ExplanationView) buildScrollIndicator(b *strings.Builder) {
 
 func (v *ExplanationView) buildHelpFooter(b *strings.Builder) {
 	if v.showHelp {
-		b.WriteString("\n" + v.help.View(ExplanationKeys))
+		b.WriteString("\n" + v.help.View(v))
 	} else {
 		v.buildHelpText(b)
 	}
@@ -331,4 +324,12 @@ func (k ExplanationKeyMap) FullHelp() [][]key.Binding {
 		{k.ScrollUp, k.ScrollDown},
 		{k.Help, k.Quit},
 	}
+}
+
+func (v *ExplanationView) ShortHelp() []key.Binding {
+	return v.keys.ShortHelp()
+}
+
+func (v *ExplanationView) FullHelp() [][]key.Binding {
+	return v.keys.FullHelp()
 }

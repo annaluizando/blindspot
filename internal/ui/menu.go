@@ -24,59 +24,6 @@ const (
 	SettingsMenu
 )
 
-type MenuKeyMap struct {
-	Up         key.Binding
-	Down       key.Binding
-	ScrollUp   key.Binding
-	ScrollDown key.Binding
-	Select     key.Binding
-	Back       key.Binding
-	Help       key.Binding
-	Quit       key.Binding
-}
-
-var MenuKeys = MenuKeyMap{
-	Up: key.NewBinding(
-		key.WithKeys("up"),
-		key.WithHelp("↑", "move up"),
-	),
-	Down: key.NewBinding(
-		key.WithKeys("down"),
-		key.WithHelp("↓", "move down"),
-	),
-	ScrollUp: key.NewBinding(
-		key.WithKeys("k"),
-		key.WithHelp("k", "scroll up"),
-	),
-	ScrollDown: key.NewBinding(
-		key.WithKeys("j"),
-		key.WithHelp("j", "scroll down"),
-	),
-	Select: key.NewBinding(
-		key.WithKeys("enter", "space"),
-		key.WithHelp("enter", "select"),
-	),
-	Back: key.NewBinding(
-		key.WithKeys("esc", "backspace"),
-		key.WithHelp("esc", "back"),
-	),
-	Help: key.NewBinding(
-		key.WithKeys("?"),
-		key.WithHelp("?", "toggle help"),
-	),
-	Quit: key.NewBinding(
-		key.WithKeys("ctrl+c", "q"),
-		key.WithHelp("ctrl+c/q", "quit"),
-	),
-}
-
-type MenuItem struct {
-	Title       string
-	Description string
-	Completed   bool
-	ID          string
-}
-
 type SelectCategoryMsg struct {
 	CategoryIndex int
 }
@@ -99,6 +46,8 @@ type MenuView struct {
 	sourceMenu  MenuType
 	viewport    viewport.Model
 	contentStr  string
+	keys        MenuKeyMap
+	builder     *MenuBuilder
 }
 
 func (m *MenuView) Init() tea.Cmd {
@@ -107,42 +56,14 @@ func (m *MenuView) Init() tea.Cmd {
 }
 
 func (m *MenuView) updateContent() {
-	var b strings.Builder
+	m.contentStr = m.builder.BuildMenuContent(m.title, m.description, m.items, m.cursor)
 
-	b.WriteString(titleStyle.Render(m.title) + "\n\n")
-	wrappedDescription := utils.WrapText(m.description, m.width)
-	b.WriteString(descriptionStyle.Render(wrappedDescription) + "\n\n")
-
-	for i, item := range m.items {
-		cursor := " "
-		if m.cursor == i {
-			cursor = ">"
-		}
-
-		status := " "
-		if item.Completed {
-			status = "✓"
-		}
-
-		line := fmt.Sprintf("%s %s %s", cursor, status, item.Title)
-		if m.cursor == i {
-			b.WriteString(selectedItemStyle.Render(line) + "\n")
-
-			wrappedItemDescription := utils.WrapText(item.Description, m.width)
-			b.WriteString(itemDescriptionStyle.Render(wrappedItemDescription) + "\n\n")
-		} else {
-			b.WriteString(itemStyle.Render(line) + "\n")
-		}
-	}
-
-	helpHeight := 1
+	helpHeight := ShortHelpHeight
 	if m.showHelp {
-		helpHeight = 4
+		helpHeight = FullHelpHeight
 	}
 
-	m.contentStr = b.String()
 	contentHeight := strings.Count(m.contentStr, "\n") + 1
-
 	viewportHeight := min(contentHeight, m.height-helpHeight-1)
 
 	m.viewport = viewport.New(m.width, viewportHeight)
@@ -155,71 +76,37 @@ func (m *MenuView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch {
-		case key.Matches(msg, MenuKeys.Quit):
+		case key.Matches(msg, m.keys.Quit):
 			return m, tea.Quit
 
-		case key.Matches(msg, MenuKeys.Back):
-			if m.type_ == CategoryMenu {
-				m.gameState.ClearMessages()
-				newMenu := NewMainMenu(m.gameState, m.width, m.height)
-				return newMenu, nil
-			} else if m.type_ == ChallengeMenu {
-				m.gameState.ClearMessages()
-				if m.sourceMenu == ProgressMenu {
-					newMenu := NewProgressMenu(m.gameState, m.width, m.height)
-					return newMenu, nil
-				}
-				newMenu := NewCategoriesMenu(m.gameState, m.width, m.height, MainMenu)
-				return newMenu, nil
-			} else if m.type_ == ProgressMenu {
-				m.gameState.ClearMessages()
-				newMenu := NewMainMenu(m.gameState, m.width, m.height)
-				return newMenu, nil
-			} else if m.type_ == SettingsMenu {
-				m.gameState.ClearMessages()
-				newMenu := NewMainMenu(m.gameState, m.width, m.height)
-				return newMenu, nil
-			}
+		case key.Matches(msg, m.keys.Back):
+			return m.handleBackAction()
 
-		case key.Matches(msg, MenuKeys.Help):
+		case key.Matches(msg, m.keys.Help):
 			m.showHelp = !m.showHelp
 			m.updateContent()
 
-		case key.Matches(msg, MenuKeys.Up):
+		case key.Matches(msg, m.keys.Up):
 			if m.cursor > 0 {
 				m.cursor--
 				m.updateContent()
-				cursorPos := strings.Index(m.contentStr, ">")
-				if cursorPos > -1 {
-					m.viewport.SetYOffset(0)
-					linesBefore := strings.Count(m.contentStr[:cursorPos], "\n")
-					if linesBefore > m.viewport.Height/2 {
-						m.viewport.SetYOffset(linesBefore - m.viewport.Height/2)
-					}
-				}
+				m.scrollToCursor()
 			}
 
-		case key.Matches(msg, MenuKeys.Down):
+		case key.Matches(msg, m.keys.Down):
 			if m.cursor < len(m.items)-1 {
 				m.cursor++
 				m.updateContent()
-				cursorPos := strings.Index(m.contentStr, ">")
-				if cursorPos > -1 {
-					m.viewport.GotoTop()
-					linesBefore := strings.Count(m.contentStr[:cursorPos], "\n")
-					if linesBefore > m.viewport.Height/2 {
-						m.viewport.SetYOffset(linesBefore - m.viewport.Height/2)
-					}
-				}
+				m.scrollToCursor()
 			}
 
-		case key.Matches(msg, MenuKeys.ScrollUp):
+		case key.Matches(msg, m.keys.ScrollUp):
 			m.viewport.LineUp(1)
 
-		case key.Matches(msg, MenuKeys.ScrollDown):
+		case key.Matches(msg, m.keys.ScrollDown):
 			m.viewport.LineDown(1)
 
-		case key.Matches(msg, MenuKeys.Select):
+		case key.Matches(msg, m.keys.Select):
 			if m.type_ == MainMenu {
 				switch m.cursor {
 				case 0: // Start Game
@@ -235,16 +122,26 @@ func (m *MenuView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						return explanationView, nil
 					}
 
-					_, found := m.gameState.GetNextIncompleteChallenge()
-					var challenge challenges.Challenge
+					// Check if all challenges are completed
+					helpers := game.NewGameStateHelpers(m.gameState)
+					totalChallenges := helpers.GetTotalChallengesCount()
+					completedChallenges := helpers.GetCompletedChallengesCount()
 
+					if totalChallenges > 0 && completedChallenges >= totalChallenges {
+						// All challenges completed, show completion screen
+						newCompletion := CompletionViewScreen(m.gameState, m.width, m.height, MainMenu)
+						return newCompletion, nil
+					}
+
+					// Try to get next incomplete challenge
+					challenge, found := m.gameState.GetNextIncompleteChallenge()
 					if found {
-						challenge = m.gameState.GetCurrentChallenge()
 						m.gameState.ClearMessages()
 						return m, func() tea.Msg {
 							return SelectChallengeMsg{Challenge: challenge}
 						}
 					} else {
+						// No incomplete challenges found, show completion screen
 						newCompletion := CompletionViewScreen(m.gameState, m.width, m.height, MainMenu)
 						return newCompletion, nil
 					}
@@ -330,7 +227,7 @@ func (m *MenuView) View() string {
 
 	// Help
 	if m.showHelp {
-		b.WriteString("\n" + m.help.View(MenuKeys))
+		b.WriteString("\n" + m.help.View(m.keys))
 	} else {
 		helpText := "Press ? for help | ↑/↓ to navigate"
 		if m.width < 60 {
@@ -379,6 +276,8 @@ func NewMainMenu(gs *game.GameState, width, height int) *MenuView {
 		width:       width,
 		height:      height,
 		description: "Train your eye to find and fix insecure coding practices through challenges!\nIdentify common security vulnerabilities based on the OWASP Top 10.",
+		keys:        NewMenuKeyMap(),
+		builder:     NewMenuBuilder(width, height),
 	}
 
 	menu.updateContent()
@@ -386,47 +285,8 @@ func NewMainMenu(gs *game.GameState, width, height int) *MenuView {
 }
 
 func NewCategoriesMenu(gs *game.GameState, width, height int, source MenuType) *MenuView {
-	items := make([]MenuItem, len(gs.ChallengeSets))
-
-	for i, set := range gs.ChallengeSets {
-		completed := gs.GetCategoryCompletionPercentage(set.Category)
-		completionText := fmt.Sprintf("[%d%% Complete]", completed)
-
-		hasBeginner := false
-		hasIntermediate := false
-		hasAdvanced := false
-
-		for _, challenge := range set.Challenges {
-			switch challenge.Difficulty {
-			case challenges.Beginner:
-				hasBeginner = true
-			case challenges.Intermediate:
-				hasIntermediate = true
-			case challenges.Advanced:
-				hasAdvanced = true
-			}
-		}
-
-		difficultyIndicator := ""
-		if hasBeginner {
-			difficultyIndicator += difficultyStyle["beginner"].Render("[B]") + " "
-		}
-		if hasIntermediate {
-			difficultyIndicator += difficultyStyle["intermediate"].Render("[I]") + " "
-		}
-		if hasAdvanced {
-			difficultyIndicator += difficultyStyle["advanced"].Render("[A]") + " "
-		}
-
-		enhancedDescription := utils.WrapText(set.Description, width) + "\n" + difficultyIndicator + completionText
-
-		items[i] = MenuItem{
-			Title:       set.Category,
-			Description: enhancedDescription,
-			Completed:   completed == 100,
-			ID:          fmt.Sprintf("category-%d", i),
-		}
-	}
+	builder := NewMenuBuilder(width, height)
+	items := builder.BuildCategoryItems(gs)
 
 	menu := &MenuView{
 		type_:       CategoryMenu,
@@ -438,6 +298,8 @@ func NewCategoriesMenu(gs *game.GameState, width, height int, source MenuType) *
 		height:      height,
 		description: "Select any category to view its challenges.\nCategories contain challenges of various difficulty levels based on the OWASP Top 10.",
 		sourceMenu:  source,
+		keys:        NewMenuKeyMap(),
+		builder:     builder,
 	}
 
 	menu.updateContent()
@@ -446,41 +308,8 @@ func NewCategoriesMenu(gs *game.GameState, width, height int, source MenuType) *
 
 func NewCategoryMenu(gs *game.GameState, categoryIndex int, width, height int, source MenuType) *MenuView {
 	category := gs.ChallengeSets[categoryIndex]
-
-	var items []MenuItem
-
-	items = append(items, MenuItem{
-		Title:       "📚 See Explanation: " + category.Category,
-		Description: "View detailed explanation about this vulnerability type, its impact, and prevention techniques.",
-		ID:          "explanation-" + category.Category,
-	})
-
-	for _, challenge := range category.Challenges {
-		completed := gs.IsChallengeCompleted(challenge.ID)
-		difficultyText := ""
-		switch challenge.Difficulty {
-		case challenges.Beginner:
-			difficultyText = difficultyStyle["beginner"].Render("[Beginner]")
-		case challenges.Intermediate:
-			difficultyText = difficultyStyle["intermediate"].Render("[Intermediate]")
-		case challenges.Advanced:
-			difficultyText = difficultyStyle["advanced"].Render("[Advanced]")
-		}
-
-		status := ""
-		if completed {
-			status = completionStyle.Render("[✓ Completed]")
-		} else {
-			status = "[Not Completed]"
-		}
-
-		items = append(items, MenuItem{
-			Title:       challenge.Title,
-			Description: fmt.Sprintf("%s %s\n%s", difficultyText, status, challenge.Description),
-			Completed:   completed,
-			ID:          challenge.ID,
-		})
-	}
+	builder := NewMenuBuilder(width, height)
+	items := builder.BuildChallengeItems(gs, category)
 
 	menu := &MenuView{
 		type_:       ChallengeMenu,
@@ -492,6 +321,8 @@ func NewCategoryMenu(gs *game.GameState, categoryIndex int, width, height int, s
 		height:      height,
 		description: utils.WrapText(category.Description, width),
 		sourceMenu:  source,
+		keys:        NewMenuKeyMap(),
+		builder:     builder,
 	}
 
 	menu.updateContent()
@@ -499,115 +330,13 @@ func NewCategoryMenu(gs *game.GameState, categoryIndex int, width, height int, s
 }
 
 func NewProgressMenu(gs *game.GameState, width, height int) *MenuView {
-	items := make([]MenuItem, len(gs.ChallengeSets))
+	builder := NewMenuBuilder(width, height)
+	items := builder.BuildProgressItems(gs)
 
-	var totalChallenges, completedChallenges int
-
-	for i, set := range gs.ChallengeSets {
-		completed := gs.GetCategoryCompletionPercentage(set.Category)
-
-		categoryCompleted := 0
-		for _, challenge := range set.Challenges {
-			totalChallenges++
-			if gs.IsChallengeCompleted(challenge.ID) {
-				completedChallenges++
-				categoryCompleted++
-			}
-		}
-
-		description := fmt.Sprintf("%d of %d challenges completed (%d%%)\n",
-			categoryCompleted, len(set.Challenges), completed)
-
-		hasDifficultyBreakdown := false
-		beginnerCount, intermediateCount, advancedCount := 0, 0, 0
-		beginnerCompleted, intermediateCompleted, advancedCompleted := 0, 0, 0
-
-		for _, challenge := range set.Challenges {
-			switch challenge.Difficulty {
-			case challenges.Beginner:
-				beginnerCount++
-				hasDifficultyBreakdown = true
-				if gs.IsChallengeCompleted(challenge.ID) {
-					beginnerCompleted++
-				}
-			case challenges.Intermediate:
-				intermediateCount++
-				hasDifficultyBreakdown = true
-				if gs.IsChallengeCompleted(challenge.ID) {
-					intermediateCompleted++
-				}
-			case challenges.Advanced:
-				advancedCount++
-				hasDifficultyBreakdown = true
-				if gs.IsChallengeCompleted(challenge.ID) {
-					advancedCompleted++
-				}
-			}
-		}
-
-		if hasDifficultyBreakdown {
-			description += "By Difficulty:\n"
-
-			if beginnerCount > 0 {
-				description += fmt.Sprintf("    Beginner: %d/%d completed\n",
-					beginnerCompleted, beginnerCount)
-			}
-			if intermediateCount > 0 {
-				description += fmt.Sprintf("    Intermediate: %d/%d completed\n",
-					intermediateCompleted, intermediateCount)
-			}
-			if advancedCount > 0 {
-				description += fmt.Sprintf("    Advanced: %d/%d completed\n",
-					advancedCompleted, advancedCount)
-			}
-		}
-
-		categoryErrorCount := 0
-		if gs.Progress.CategoryErrorCounts != nil {
-			categoryErrorCount = gs.Progress.CategoryErrorCounts[set.Category]
-		}
-
-		if categoryErrorCount > 0 {
-			errorRate := 0
-			totalAttempts := categoryCompleted + categoryErrorCount
-			if totalAttempts > 0 {
-				errorRate = (categoryErrorCount * 100) / totalAttempts
-			}
-
-			var errorLevel string
-			if errorRate > 50 {
-				errorLevel = "High"
-			} else if errorRate > 30 {
-				errorLevel = "Moderate"
-			} else if errorRate > 15 {
-				errorLevel = "Low"
-			} else {
-				errorLevel = ""
-			}
-
-			if errorLevel != "" {
-				description += fmt.Sprintf("Errors in category: %d (%s - %d%% error rate)\n",
-					categoryErrorCount, errorLevel, errorRate)
-			} else {
-				description += fmt.Sprintf("Errors in category: %d (%d%% error rate)\n",
-					categoryErrorCount, errorRate)
-			}
-		} else if categoryCompleted > 0 {
-			description += "No errors in this category. Great job!\n"
-		}
-
-		items[i] = MenuItem{
-			Title:       set.Category,
-			Description: description,
-			Completed:   completed == 100,
-			ID:          fmt.Sprintf("progress-category-%d", i),
-		}
-	}
-
-	overallPercentage := 0
-	if totalChallenges > 0 {
-		overallPercentage = (completedChallenges * 100) / totalChallenges
-	}
+	helpers := game.NewGameStateHelpers(gs)
+	overallPercentage := helpers.GetOverallCompletionPercentage()
+	totalChallenges := helpers.GetTotalChallengesCount()
+	completedChallenges := helpers.GetCompletedChallengesCount()
 
 	description := fmt.Sprintf("Overall Progress: %d of %d challenges completed (%d%%)\n\n",
 		completedChallenges, totalChallenges, overallPercentage)
@@ -623,6 +352,8 @@ func NewProgressMenu(gs *game.GameState, width, height int) *MenuView {
 		height:      height,
 		description: utils.WrapText(description, width),
 		sourceMenu:  MainMenu,
+		keys:        NewMenuKeyMap(),
+		builder:     builder,
 	}
 
 	menu.updateContent()
@@ -630,41 +361,8 @@ func NewProgressMenu(gs *game.GameState, width, height int) *MenuView {
 }
 
 func NewSettingsMenu(gs *game.GameState, width, height int) *MenuView {
-	vulnerabilityNamesStatus := "Show"
-	if !gs.Settings.ShowVulnerabilityNames {
-		vulnerabilityNamesStatus = "Hide"
-	}
-
-	orderModeText := "Category Order"
-	if gs.Settings.GameMode == "random-by-difficulty" {
-		orderModeText = "Random by Difficulty"
-	}
-
-	items := []MenuItem{
-		{
-			Title:       "Vulnerability Names: " + vulnerabilityNamesStatus,
-			Description: "Toggle whether vulnerability names are shown during challenges.",
-			ID:          "setting-vulnnames",
-		},
-		{
-			Title: "Game Mode: " + orderModeText,
-			Description: "Choose how challenges are ordered when playing the game.\n" +
-				"Category Order: Play challenges grouped by vulnerabilty category. (Standard Mode)\n" +
-				"Random by Difficulty: Play challenges in random order but grouped by difficulty level. (More challenging mode, specially if combined with 'Vulnerability Names: Hide')",
-			ID: "setting-ordermode",
-		},
-		{
-			Title: "Delete all progress data",
-			Description: "Erases ALL progress data and begin game from start.\n" +
-				"!!! Be aware this will make you loose ALL your current progress. \n",
-			ID: "setting-deleteprogress",
-		},
-		{
-			Title:       "Back to Main Menu",
-			Description: "Return to the main menu",
-			ID:          "setting-back",
-		},
-	}
+	builder := NewMenuBuilder(width, height)
+	items := builder.BuildSettingsItems(gs)
 
 	menu := &MenuView{
 		type_:       SettingsMenu,
@@ -676,6 +374,8 @@ func NewSettingsMenu(gs *game.GameState, width, height int) *MenuView {
 		height:      height,
 		description: "Configure your game preferences. These settings will be saved for future sessions.",
 		sourceMenu:  MainMenu,
+		keys:        NewMenuKeyMap(),
+		builder:     builder,
 	}
 
 	menu.updateContent()
@@ -692,5 +392,34 @@ func (k MenuKeyMap) FullHelp() [][]key.Binding {
 		{k.ScrollUp, k.ScrollDown},
 		{k.Select, k.Back},
 		{k.Help, k.Quit},
+	}
+}
+
+// Helper methods for MenuView
+func (m *MenuView) handleBackAction() (tea.Model, tea.Cmd) {
+	m.gameState.ClearMessages()
+
+	switch m.type_ {
+	case CategoryMenu:
+		return NewMainMenu(m.gameState, m.width, m.height), nil
+	case ChallengeMenu:
+		if m.sourceMenu == ProgressMenu {
+			return NewProgressMenu(m.gameState, m.width, m.height), nil
+		}
+		return NewCategoriesMenu(m.gameState, m.width, m.height, MainMenu), nil
+	case ProgressMenu, SettingsMenu:
+		return NewMainMenu(m.gameState, m.width, m.height), nil
+	default:
+		return NewMainMenu(m.gameState, m.width, m.height), nil
+	}
+}
+
+func (m *MenuView) scrollToCursor() {
+	cursorPos := strings.Index(m.contentStr, ">")
+	if cursorPos > -1 {
+		linesBefore := strings.Count(m.contentStr[:cursorPos], "\n")
+		if linesBefore > m.viewport.Height/2 {
+			m.viewport.SetYOffset(linesBefore - m.viewport.Height/2)
+		}
 	}
 }

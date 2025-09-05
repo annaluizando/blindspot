@@ -159,11 +159,13 @@ func (gs *GameState) GetSuccessMessage() string {
 }
 
 func (gs *GameState) IsErrorRecent() bool {
-	return time.Since(gs.ErrorTimestamp) < 10*time.Second
+	helpers := NewGameStateHelpers(gs)
+	return helpers.IsErrorRecent()
 }
 
 func (gs *GameState) IsSuccessMessageRecent() bool {
-	return time.Since(gs.SuccessMessageTimestamp) < 5*time.Second
+	helpers := NewGameStateHelpers(gs)
+	return helpers.IsSuccessMessageRecent()
 }
 
 func (gs *GameState) ToggleShowVulnerabilityNames() {
@@ -336,14 +338,24 @@ func (gs *GameState) GetNextIncompleteChallenge() (challenges.Challenge, bool) {
 	}
 
 	if startCategoryIdx > 0 || startChallengeIdx > 0 {
-		for categoryIdx := 0; categoryIdx <= startCategoryIdx; categoryIdx++ {
-			maxChallengeIdx := len(gs.ChallengeSets[categoryIdx].Challenges)
-			if categoryIdx == startCategoryIdx {
-				maxChallengeIdx = startChallengeIdx
+		for categoryIdx := range startCategoryIdx {
+			if categoryIdx >= len(gs.ChallengeSets) {
+				break
 			}
+			challenges := gs.ChallengeSets[categoryIdx].Challenges
+			for challengeIdx := range challenges {
+				challenge := challenges[challengeIdx]
+				if !gs.IsChallengeCompleted(challenge.ID) {
+					return challenge, true
+				}
+			}
+		}
 
-			for challengeIdx := range maxChallengeIdx {
-				challenge := gs.ChallengeSets[categoryIdx].Challenges[challengeIdx]
+		// Check the start category from startChallengeIdx onwards
+		if startCategoryIdx < len(gs.ChallengeSets) {
+			challenges := gs.ChallengeSets[startCategoryIdx].Challenges
+			for challengeIdx := startChallengeIdx; challengeIdx < len(challenges); challengeIdx++ {
+				challenge := challenges[challengeIdx]
 				if !gs.IsChallengeCompleted(challenge.ID) {
 					return challenge, true
 				}

@@ -15,97 +15,44 @@ import (
 	"blindspot/internal/utils"
 )
 
-type keyMap struct {
-	Up         key.Binding
-	Down       key.Binding
-	ScrollUp   key.Binding
-	ScrollDown key.Binding
-	Select     key.Binding
-	Back       key.Binding
-	Help       key.Binding
-	Quit       key.Binding
-	ShowHint   key.Binding
-	Next       key.Binding
-}
-
-var keys = keyMap{
-	Up: key.NewBinding(
-		key.WithKeys("up"),
-		key.WithHelp("↑", "select previous option"),
-	),
-	Down: key.NewBinding(
-		key.WithKeys("down"),
-		key.WithHelp("↓", "select next option"),
-	),
-	ScrollUp: key.NewBinding(
-		key.WithKeys("k"),
-		key.WithHelp("k", "scroll content up"),
-	),
-	ScrollDown: key.NewBinding(
-		key.WithKeys("j"),
-		key.WithHelp("j", "scroll content down"),
-	),
-	Select: key.NewBinding(
-		key.WithKeys("enter", "space"),
-		key.WithHelp("enter", "select"),
-	),
-	Back: key.NewBinding(
-		key.WithKeys("esc"),
-		key.WithHelp("esc", "back"),
-	),
-	Help: key.NewBinding(
-		key.WithKeys("?"),
-		key.WithHelp("?", "toggle help"),
-	),
-	Quit: key.NewBinding(
-		key.WithKeys("ctrl+c", "q"),
-		key.WithHelp("ctrl+c/q", "quit"),
-	),
-	ShowHint: key.NewBinding(
-		key.WithKeys("h"),
-		key.WithHelp("h", "show hint"),
-	),
-	Next: key.NewBinding(
-		key.WithKeys("n", "enter"),
-		key.WithHelp("n", "next challenge"),
-		key.WithHelp("enter", "next challenge"),
-	),
-}
-
 type ChallengeView struct {
-	gameState   *game.GameState
-	challenge   challenges.Challenge
-	cursor      int
-	showHint    bool
-	showHelp    bool
-	help        help.Model
-	quizOptions []string
-	result      string
-	resultStyle lipgloss.Style
-	width       int
-	height      int
-	hasAnswered bool
-	isCorrect   bool
-	sourceMenu  MenuType
-	viewport    viewport.Model
-	contentStr  string
-	helpHeight  int
+	gameState      *game.GameState
+	challenge      challenges.Challenge
+	cursor         int
+	showHint       bool
+	showHelp       bool
+	help           help.Model
+	quizOptions    []string
+	result         string
+	resultStyle    lipgloss.Style
+	width          int
+	height         int
+	hasAnswered    bool
+	isCorrect      bool
+	sourceMenu     MenuType
+	viewport       viewport.Model
+	contentStr     string
+	helpHeight     int
+	keys           ChallengeKeyMap
+	viewportHelper *ViewportHelper
 }
 
 func NewChallengeView(gs *game.GameState, challenge challenges.Challenge, width, height int, source MenuType) *ChallengeView {
 	challengeView := &ChallengeView{
-		gameState:   gs,
-		challenge:   challenge,
-		help:        help.New(),
-		resultStyle: successStyle,
-		showHint:    false,
-		cursor:      0,
-		width:       width,
-		height:      height,
-		hasAnswered: false,
-		isCorrect:   false,
-		quizOptions: challenge.Options,
-		sourceMenu:  source,
+		gameState:      gs,
+		challenge:      challenge,
+		help:           help.New(),
+		resultStyle:    successStyle,
+		showHint:       false,
+		cursor:         0,
+		width:          width,
+		height:         height,
+		hasAnswered:    false,
+		isCorrect:      false,
+		quizOptions:    challenge.Options,
+		sourceMenu:     source,
+		keys:           NewChallengeKeyMap(),
+		viewportHelper: NewViewportHelper(width, height),
 	}
 
 	challengeView.updateContent()
@@ -275,7 +222,7 @@ func (m *ChallengeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		// Handle challenge completion navigation
-		if m.hasAnswered && m.isCorrect && key.Matches(msg, keys.Next) {
+		if m.hasAnswered && m.isCorrect && key.Matches(msg, m.keys.Next) {
 			currentCategory := m.gameState.GetCurrentCategory()
 			currentCategoryIdx := m.gameState.CurrentCategoryIdx
 			currentChallengeIdx := m.gameState.CurrentChallengeIdx
@@ -319,10 +266,10 @@ func (m *ChallengeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		switch {
-		case key.Matches(msg, keys.Quit):
+		case key.Matches(msg, m.keys.Quit):
 			return m, tea.Quit
 
-		case key.Matches(msg, keys.Back):
+		case key.Matches(msg, m.keys.Back):
 			if m.gameState.StartedViaCLI {
 				return m, nil
 			}
@@ -330,16 +277,16 @@ func (m *ChallengeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return backToMenuMsg{}
 			}
 
-		case key.Matches(msg, keys.Help):
+		case key.Matches(msg, m.keys.Help):
 			m.showHelp = !m.showHelp
 			m.updateViewportDimensions()
 			m.updateContent()
 
-		case key.Matches(msg, keys.ShowHint):
+		case key.Matches(msg, m.keys.ShowHint):
 			m.showHint = !m.showHint
 			m.updateContent()
 
-		case key.Matches(msg, keys.Up):
+		case key.Matches(msg, m.keys.Up):
 			if m.cursor > 0 && (!m.hasAnswered || !m.isCorrect) {
 				m.cursor--
 				if m.hasAnswered && !m.isCorrect {
@@ -350,7 +297,7 @@ func (m *ChallengeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.ensureCursorVisible()
 			}
 
-		case key.Matches(msg, keys.Down):
+		case key.Matches(msg, m.keys.Down):
 			if m.cursor < len(m.challenge.Options)-1 && (!m.hasAnswered || !m.isCorrect) {
 				m.cursor++
 				if m.hasAnswered && !m.isCorrect {
@@ -361,17 +308,17 @@ func (m *ChallengeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.ensureCursorVisible()
 			}
 
-		case key.Matches(msg, keys.ScrollUp):
+		case key.Matches(msg, m.keys.ScrollUp):
 			if !m.hasAnswered || m.showHelp {
 				m.viewport.LineUp(1)
 			}
 
-		case key.Matches(msg, keys.ScrollDown):
+		case key.Matches(msg, m.keys.ScrollDown):
 			if !m.hasAnswered || m.showHelp {
 				m.viewport.LineDown(1)
 			}
 
-		case key.Matches(msg, keys.Select):
+		case key.Matches(msg, m.keys.Select):
 			m.hasAnswered = true
 			selectedOption := m.challenge.Options[m.cursor]
 			currentCategory := m.gameState.GetCurrentCategory()
@@ -418,7 +365,7 @@ func (m *ChallengeView) View() string {
 	b.WriteString(notificationDisplay.RenderAllNotifications(m.gameState))
 
 	if m.showHelp {
-		b.WriteString(m.help.View(MenuKeys))
+		b.WriteString(m.help.View(m))
 	} else {
 		helpText := "Press ? for help | ↑/↓ to select option"
 		if hasScroll {
@@ -434,21 +381,31 @@ func (m *ChallengeView) View() string {
 }
 
 // Helper methods
-func (k keyMap) ShortHelp() []key.Binding {
+func (k ChallengeKeyMap) ShortHelp() []key.Binding {
 	return []key.Binding{k.Help, k.Quit}
 }
 
-func (m *ChallengeView) FullHelp() [][]key.Binding {
-	helpKeys := [][]key.Binding{
-		{keys.Up, keys.Down},
-		{keys.ScrollUp, keys.ScrollDown},
-		{keys.Select},
-		{keys.Help, keys.Quit},
-		{keys.ShowHint, keys.Next},
+func (k ChallengeKeyMap) FullHelp() [][]key.Binding {
+	return [][]key.Binding{
+		{k.Up, k.Down},
+		{k.ScrollUp, k.ScrollDown},
+		{k.Select},
+		{k.Help, k.Quit},
+		{k.ShowHint, k.Next},
 	}
+}
+
+// ShortHelp returns the short help key bindings for ChallengeView
+func (m *ChallengeView) ShortHelp() []key.Binding {
+	return m.keys.ShortHelp()
+}
+
+// FullHelp returns the full help key bindings for ChallengeView
+func (m *ChallengeView) FullHelp() [][]key.Binding {
+	helpKeys := m.keys.FullHelp()
 
 	if !m.gameState.StartedViaCLI {
-		helpKeys[2] = append(helpKeys[2], keys.Back)
+		helpKeys[2] = append(helpKeys[2], m.keys.Back)
 	}
 
 	return helpKeys
