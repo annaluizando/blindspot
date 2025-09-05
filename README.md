@@ -89,27 +89,37 @@ blindspot/
 │   ├── challenges/                  # Package for all security challenges
 │   │   ├── challenge.go             # Responsible for loading all challenges
 │   │   └── vuln_explanation.go      # Responsible for loading all vulnerabilities explanation
-|   ├── cli/
+│   ├── cli/
 │   │   ├── config.go                # CLI configuration handlers
 │   │   └── runner.go                # Program initialization and running
-│   ├── ui/                          # UI components using Bubbletea
-│   │   ├── styles.go                # Common styles/themes for the UI
-│   │   ├── challenge_view.go        # View for displaying challenges
-│   │   ├── vuln_explanation_view.go # View for displaying vulnerability explanation
-│   │   ├── quiz_view.go             # Multiple choice component
-│   │   └── menu.go                  # Navigation menu
 │   ├── game/                        # Game logic
-│   │   ├── state.go                 # Game state management
-│   │   ├── progress.go              # User progress/statistics tracking
-│   │   └── validator.go             # Code validation logic
+│   │   ├── helpers.go               # Game helper functions
+│   │   └── state.go                 # Game state management
+│   ├── ui/                          # UI components using Bubbletea
+│   │   ├── challenge_starter.go     # Challenge initialization view
+│   │   ├── challenge_view.go        # View for displaying challenges
+│   │   ├── cli_completion_view.go   # CLI completion view
+│   │   ├── completion_view.go       # Challenge completion view
+│   │   ├── constants.go             # UI constants
+│   │   ├── initialize.go            # UI initialization
+│   │   ├── keys.go                  # Key bindings
+│   │   ├── menu_utils.go            # Menu utility functions
+│   │   ├── menu.go                  # Navigation menu
+│   │   ├── notification_display.go  # Notification display component
+│   │   ├── styles.go                # Common styles/themes for the UI
+│   │   ├── viewport_utils.go        # Viewport utility functions
+│   │   └── vuln_explanation_view.go # View for displaying vulnerability explanation
 │   └── utils/
-│       └── highlight.go             # Syntax code highlighting
-│       └── wrapText.go              # Text wrap according to terminal  width
+│       ├── highlight.go             # Syntax code highlighting
+│       └── wrapText.go              # Text wrap according to terminal width
 ├── assets/                          # Static assets
-│   └── challenges.yaml              # Challenge definitions
-│   └── vuln_explanations.yaml       # Vulnerabilities Explanations defitions
+│   ├── challenges.yaml              # Challenge definitions
+│   └── vuln_explanations.yaml       # Vulnerabilities Explanations definitions
 ├── go.mod                           # Go module file
-└── go.sum                           # Go dependencies
+├── go.sum                           # Go dependencies
+├── Makefile                         # Build and installation commands
+├── LICENSE                          # GPL-3.0 License
+└── README.md                        # Project documentation
 ```
 
 ## ✨ Features
