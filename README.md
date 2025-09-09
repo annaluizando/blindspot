@@ -183,33 +183,6 @@ your questions. Each question needs to be in the following format:
       lang: string, preferebly one of [supported languages in chroma lib](https://github.com/alecthomas/chroma?tab=readme-ov-file#supported-languages) for code highlighthing
 ```
 
-## To-Do
-
-### Completed
-
-- [x] Implement syntax highlighting
-- [x] Add more challenges and vulnerabilities
-- [x] Add explanations for each vulnerability category
-- [x] Fix "Progress" tab functionality
-- [x] Implement both random and category-based game modes
-- [x] Restore "Settings" section with customization options
-- [x] Add ability to skip challenges
-- [x] Include vulnerability explanations in category sections
-- [x] Fix some texts line break (menu screen)
-- [x] Add Congratulation screen when finishing all challenges
-- [x] Add progess data erasing in Settings
-- [x] Correct vuln explanation to go back to its origin and not main menu when user presses back key
-- [x] Add user errors count in each category for statistics
-- [x] Add scroll when height is too big for terminal view
-- [x] Fix and improve help text clarity
-- [x] Complete manual review of challenges.yaml
-- [x] Add cli support
-
-### In Progress
-
-- [ ] Resolve bug in game mode toggle
-- [+-] Review code and improve
-
 ## 📜 License
 
 This project is licensed under the GPL-3.0 License - see the [LICENSE](LICENSE) file for details.
