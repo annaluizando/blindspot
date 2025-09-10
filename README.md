@@ -4,7 +4,7 @@ A terminal interactive game designed to train yourself to identify insecure codi
 
 Feel free to play, analyze, modify, and contribute. New ideas and collaborations are always welcome :)
 
-<img src="https://github.com/user-attachments/assets/f6f3f167-7383-4983-a0dd-a01791a46493" width="900" />
+<img src="https://github.com/user-attachments/assets/7d634cfb-b009-40fc-ae67-66d20d5473de" width="900" />
 
 ## 🪜 Get Started!
 
